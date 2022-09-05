@@ -1,21 +1,17 @@
 # ==================================================================
+import os
 import shutil
 import math
 import matplotlib.pyplot as plt
 import random
-import os
-import win32con
 import win32api
 import win32file
-from tkinter import *
 import ctypes
 import tkinter as tk
+from tkinter import *
 from tkinter import filedialog
-import pyautogui
-import time
-from threading import Thread
-import pyperclip
-from pynput.keyboard import Key, Listener
+# ==================================================================
+import Gui_Automizer
 # ==================================================================
 # Import kivy
 from kivy.app import App
@@ -30,36 +26,10 @@ from kivy.properties import ObjectProperty
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
-# ==============================================================================
-correctX = 0
-correctY = 0
 
 
-class MyThread(Thread):
-    def __init__(self, name):
-        Thread.__init__(self)
-        self.name = name
+# ==================================================================
 
-        def on_press_esc(key):
-            if key == Key.esc:
-                print("------------------------- Завершение F -------------------------")
-                os._exit(0)
-                return False
-
-        # Collect events until released
-        listener = Listener(on_press=on_press_esc)
-        listener.start()
-
-    def run(self):
-        timer_exit = 0
-        time.sleep(0.1)
-        # print("ok")
-        if timer_exit > 100:
-            print("---------------- Аварийное завершение -------------------")
-            os._exit(0)
-
-
-# ***********************************************************************
 class qPoint():
     def __init__(self, x, y):
         self.x = x
@@ -69,90 +39,6 @@ class qPoint():
         return qPoint(self.x + other.x, self.y + other.y)
 
 
-# ---------------------------------------------------------------
-
-
-def move(coords, delay=0.01):
-    x = coords.x
-    y = coords.y
-    win32api.SetCursorPos((x, y))
-    time.sleep(delay)
-
-
-def click(coords, delay=0.01):
-    x = coords.x + correctX
-    y = coords.y + correctY
-    win32api.SetCursorPos((x, y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-    time.sleep(delay)
-
-
-def click_right(coords, delay=0.01):
-    x = coords.x
-    y = coords.y
-    win32api.SetCursorPos((x, y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, x, y, 0, 0)
-    time.sleep(delay)
-
-
-def dbl_click(coords, delay=0.01):
-    x = coords.x
-    y = coords.y
-    win32api.SetCursorPos((x, y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-    time.sleep(0.01)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-    time.sleep(delay)
-
-
-def click_down(coords, delay=0.01):
-    x = coords.x
-    y = coords.y
-    win32api.SetCursorPos((x, y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-    time.sleep(delay)
-
-
-def click_up(coords, delay=0.01):
-    x = coords.x
-    y = coords.y
-    win32api.SetCursorPos((x, y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-    time.sleep(delay)
-
-
-# ---------------------------------------------------------------
-def hotkey(a, b):
-    pyautogui.keyDown(a)
-    time.sleep(0.1)
-    pyautogui.keyDown(b)
-    time.sleep(0.05)
-    pyautogui.keyUp(b)
-    time.sleep(0.02)
-    pyautogui.keyUp(a)
-    time.sleep(0.01)
-
-
-# ---------------------------------------------------------------
-def press_key(key, delay=0.01):
-    pyautogui.press(key)
-    if delay > 0:
-        time.sleep(delay)
-
-
-def press_keys(key1, key2, delay=0.01):
-    hotkey(key1, key2)
-    if delay > 0:
-        time.sleep(delay)
-
-
-# ***********************************************************************
-threadExit = MyThread("exit")
-threadExit.start()
 # ***********************************************************************
 ignoreRotation = False
 useOnlyOneHead = False
@@ -166,12 +52,10 @@ NUMBER_SHOW_PLOT = "6"
 NUMBER_SD_CHMT = "7"
 NUMBER_SD_dispenser = "8"
 NUMBER_SPLIT_SIZE = "9"
-# LM358D - SO8 pic12f675
-# 0.1 - 0.47
 file_sd = "E:/"
 allowConvert = 0
 ignoreCoeff = 0
-stackError = 0
+stack_error = 0
 coordCoef = 0.801
 xCoef = 1.0
 yCoef = 1.0
@@ -195,14 +79,14 @@ size_y = 1
 devices_number_x = 1
 devices_number_y = 1
 split_size_type = False
-showPlot = False
-copyToSdChmt = False
-copyToSddispenser = False
+show_plot = False
+copy_to_sd_chmt = False
+copy_to_sd_dispenser = False
 KOLVO_KATUSHEK = 32
 KOLVO_LOTKOV = 3
 coils = [" "] * KOLVO_KATUSHEK
-pathToFolder = os.path.abspath(__file__)
-pathToFolderOutput = pathToFolder
+path_to_folder = os.path.abspath(__file__)
+path_to_folderOutput = path_to_folder
 FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
 SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
                 b'\xd7\xa2\xca\xcd '
@@ -535,9 +419,9 @@ class Component:
             else:
                 for pin in self.pins:
                     xz = self.center.x + pin.x * math.cos(real_angle * PI / 180) - \
-                        pin.y * math.sin(real_angle * PI / 180)
+                         pin.y * math.sin(real_angle * PI / 180)
                     yz = self.center.y + pin.x * math.sin(real_angle * PI / 180) + \
-                        pin.y * math.cos(real_angle * PI / 180)
+                         pin.y * math.cos(real_angle * PI / 180)
                     pin.x = xz
                     pin.y = yz
 
@@ -555,13 +439,14 @@ class Container(BoxLayout):
     ti_size_y = ObjectProperty()
     ti_devices_number_x = ObjectProperty()
     ti_devices_number_y = ObjectProperty()
-    ti_name = ObjectProperty()
+    ti_device_name = ObjectProperty()
     cb_chart = ObjectProperty()
     cb_sd_chmt = ObjectProperty()
     cb_sd_dispenser = ObjectProperty()
     bl_coils = ObjectProperty()
     ll_out = ObjectProperty()
     b_input_pcad = ObjectProperty()
+    cb_split_size = ObjectProperty()
     b_input_saved = ObjectProperty()
 
     def print_custom(self, text, end="\n"):
@@ -569,60 +454,20 @@ class Container(BoxLayout):
         pass
 
     def input_pcad(self):
-        press_keys('alt', 'tab', 0.8)
-        press_key('alt', 0.2)
-        press_key('right', 0.1)
-        press_key('enter', 0.1)
-        for i in range(8):
-            press_key('down')
-        press_key('enter')
-        for i in range(3):
-            press_key('tab')
-        press_key('enter')
-        for i in range(2):
-            press_keys('shift', 'tab')
-        for i in range(7):
-            press_key('down')
-        press_key('space')
-        for i in range(8):
-            press_key('tab')
-            if (i == 6) or (i == 5):
-                press_key('0')
-        press_key('down')
-        press_key('up')
-        press_key('tab')
-        press_key('tab')
-        press_key('space', 1.5)
-        press_key('alt')
-        press_key('right')
-        press_key('down')
-        press_key('up')
-        press_key('up')
-        press_key('enter')
-        press_key('alt')
-        press_key('right')
-        press_key('down')
-        press_key('down')
-        press_key('down')
-        press_key('enter')
-        press_keys('alt', 'f4', 0.2)
-        press_key('tab')
-        press_key('enter')
-        press_key('alt')
-        press_keys('alt', 'tab')
-        file_input = pathToFolder + "Input.txt"
+        file_input = path_to_folder + "Input.txt"
         file_out = open(file_input, 'w')
-        input_text = pyperclip.paste()
+        input_text = Gui_Automizer.pcad_reports()
+        # input_text = pyperclip.paste()
         input_text = input_text.replace('\n', '')
         print(input_text)
         file_out.write(input_text)
         file_out.close()
 
     def correct_coords(self):
-        point = pathToFolder.rfind("\\")
-        this_directory = pathToFolder[:point]
+        point = path_to_folder.rfind("\\")
+        this_directory = path_to_folder[:point]
         point = this_directory.rfind("\\")
-        this_directory = pathToFolder[:point]
+        this_directory = path_to_folder[:point]
         error = False
         root = tk.Tk()
         root.withdraw()
@@ -733,122 +578,10 @@ class Container(BoxLayout):
             file_main.close()
             # ============================================================
             if not error:
-                # numberComp = int(input("Количество компонентов в PCAD файле: "))
-                pyautogui.keyDown('alt')
-                time.sleep(0.1)
-                pyautogui.keyDown('tab')
-                time.sleep(0.3)
-                pyautogui.keyDown('tab')
-                time.sleep(0.1)
-                pyautogui.keyUp('alt')
-                time.sleep(0.1)
-                press_key('alt')
-                for i in range(2):
-                    press_key('right')
-                press_key('enter')
-                for i in range(4):
-                    press_key('up')
-                press_key('enter', 0.2)
-                exit_flag = False
-                number = 0
-                prev_ref = "NONE"
-                while not exit_flag:
-                    # for i in range(7):
-                    click(qPoint(x=839, y=366 - 40))  # scroll up
-                    press_key('home', 0.1)
-                    time.sleep(0.1)
-                    click(qPoint(x=882, y=366 - 40))  # select first ref
-                    time.sleep(0.1)
-                    pages = int(number / 15)  # 16 components in page
-                    for i in range(pages):
-                        press_key('pagedown', 0.05)
-                    number_left = number - pages * 15
-                    for i in range(number_left):
-                        press_key('down', 0)
-                    time.sleep(0.1)
-                    click(qPoint(x=1025, y=370 - 40), 0.6)  # properties
-                    click(qPoint(x=848, y=361 - 40), 0.1)  # ref
-                    click(qPoint(x=848, y=361 - 40), 0.2)  # ref
-                    press_keys('ctrl', 'c', 0.1)
-                    copied_ref = pyperclip.paste()
-                    print(number, copied_ref)
-                    if copied_ref == prev_ref:
-                        exit_flag = True
-                    else:
-                        prev_ref = copied_ref
-                        for coords in arr_coords:
-                            # print(coords[2])
-                            if copied_ref == coords[2]:
-                                click(qPoint(x=1059, y=538), 0.05)  # x
-                                click(qPoint(x=1059, y=538), 0.1)  # x
-                                press_keys('ctrl', 'x', 0.05)
-                                copied_coord = pyperclip.paste()
-                                x_new = round(float(copied_coord) + float(coords[0]), 3)
-                                pyperclip.copy(str(x_new))
-                                time.sleep(0.05)
-                                press_keys('ctrl', 'v', 0.2)
-                                press_key('tab')
-                                press_keys('ctrl', 'x', 0.05)
-                                copied_coord = pyperclip.paste()
-                                y_new = round(float(copied_coord) + float(coords[1]), 3)
-                                pyperclip.copy(str(y_new))
-                                time.sleep(0.05)
-                                print("x: ", x_new, "y: ", y_new)
-                                press_keys('ctrl', 'v', 0.2)
-                                press_key('enter')
-                                break
-                        else:
-                            press_key('enter')
-                        number += 1
-                    # exit_flag = True#!1111111111111111111111111111111111111
-                # press_key('esc')
-                for i in range(6):
-                    press_key('down')
-                press_key('enter', 0.1)
-                # Reports
-                press_key('alt', 0.2)
-                press_key('right', 0.1)
-                press_key('enter', 0.1)
-                for i in range(8):
-                    press_key('down')
-                press_key('enter')
-                for i in range(3):
-                    press_key('tab')
-                press_key('enter')
-                for i in range(2):
-                    press_keys('shift', 'tab')
-                for i in range(7):
-                    press_key('down')
-                press_key('space')
-                for i in range(8):
-                    press_key('tab')
-                    if (i == 6) or (i == 5):
-                        press_key('0')
-                press_key('down')
-                press_key('up')
-                press_key('tab')
-                press_key('tab')
-                press_key('space', 1.5)
-                press_key('alt')
-                press_key('right')
-                press_key('down')
-                press_key('up')
-                press_key('up')
-                press_key('enter')
-                press_key('alt')
-                press_key('right')
-                press_key('down')
-                press_key('down')
-                press_key('down')
-                press_key('enter')
-                press_keys('alt', 'f4', 0.2)
-                press_key('tab')
-                press_key('enter')
-                press_key('alt')
-                press_keys('alt', 'tab')
-                file_input = pathToFolder + "Input.txt"
+                input_text = Gui_Automizer.pcad_correct_coords(arr_coords)
+
+                file_input = path_to_folder + "Input.txt"
                 file_out = open(file_input, 'w')
-                input_text = pyperclip.paste()
                 input_text = input_text.replace('\n', '')
                 # print(input_text)
                 file_out.write(input_text)
@@ -871,10 +604,10 @@ class Container(BoxLayout):
             coords = device_params[1].split("x")
             size_x = float(coords[0])
             size_y = float(coords[1])
-            self.ti_name.text = device_name
+            self.ti_device_name.text = device_name
             self.ti_size_x.text = str(size_x)
             self.ti_size_y.text = str(size_y)
-            shutil.copy(file_path, pathToFolder + "Input.txt")
+            shutil.copy(file_path, path_to_folder + "Input.txt")
         pass
 
     def raschet(self):
@@ -888,35 +621,35 @@ class Container(BoxLayout):
             global size_y
             global devices_number_x
             global devices_number_y
-            global showPlot
-            global copyToSdChmt
-            global copyToSddispenser
-            global pathToFolder
-            global stackError
+            global show_plot
+            global copy_to_sd_chmt
+            global copy_to_sd_dispenser
+            global path_to_folder
+            global stack_error
             global coils
             self.ll_out.text = ""
-            device_name = self.ti_name.text
+            device_name = self.ti_device_name.text
             size_x = float(self.ti_size_x.text)
             size_y = float(self.ti_size_y.text)
             devices_number_x = int(self.ti_devices_number_x.text)
             devices_number_y = int(self.ti_devices_number_y.text)
             if self.cb_chart.active:
-                showPlot = True
+                show_plot = True
             else:
-                showPlot = False
+                show_plot = False
             if self.cb_sd_chmt.active:
-                copyToSdChmt = True
+                copy_to_sd_chmt = True
             else:
-                copyToSdChmt = False
+                copy_to_sd_chmt = False
             if self.cb_sd_dispenser.active:
-                copyToSddispenser = True
+                copy_to_sd_dispenser = True
             else:
-                copyToSddispenser = False
-            if self.cbSplitSize.active:
+                copy_to_sd_dispenser = False
+            if self.cb_split_size.active:
                 split_size_type = True
             else:
                 split_size_type = False
-            path_to_file = pathToFolder + file_name
+            path_to_file = path_to_folder + file_name
             if devices_number_x == 0:
                 devices_number_x = 1
             if devices_number_y == 0:
@@ -924,10 +657,10 @@ class Container(BoxLayout):
             # print(self.ids)
             for kat in range(KOLVO_KATUSHEK):
                 coils[kat] = self.ids[str("kat" + str(kat + 1))].text
-                katushka = coils[kat].split()
-                if len(katushka) == 2:
-                    stacks[kat].value = katushka[1]
-                    stacks[kat].pattern_name = katushka[0]
+                coil = coils[kat].split()
+                if len(coil) == 2:
+                    stacks[kat].value = coil[1]
+                    stacks[kat].pattern_name = coil[0]
                     try:
                         self.height = self.getHeight(stacks[kat].pattern_name)
                     except:
@@ -951,7 +684,7 @@ class Container(BoxLayout):
                         mark_file = "b"
                 else:
                     mark_file = ""
-                file_chmt_name = pathToFolderOutput + device_name + mark_file + ".csv"
+                file_chmt_name = path_to_folderOutput + device_name + mark_file + ".csv"
                 file_out = open(file_chmt_name, 'w')
                 # ---------------------- Origin offset ----------------------
                 file_out.close()
@@ -1226,13 +959,13 @@ class Container(BoxLayout):
                     else:
                         pass
                         # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
-                    stackError = 2
+                    stack_error = 2
 
-            if stackError:
+            if stack_error:
                 self.print_custom("-------------------------------------------------------------------")
-                if stackError == 1:
+                if stack_error == 1:
                     self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
-                if stackError == 2:
+                if stack_error == 2:
                     self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
                 self.print_custom("-------------------------------------------------------------------\n")
 
@@ -1276,14 +1009,14 @@ class Container(BoxLayout):
             if len(drives_rem) == 1:
                 file_sd = drives_rem[0]
             # print(len(drives_rem))
-            if copyToSdChmt:
+            if copy_to_sd_chmt:
                 if len(drives_rem) == 1:
                     if not split_size_type:
                         shutil.copy(file_chmt_name, file_sd)
                     else:
-                        file_chmt_name = pathToFolderOutput + device_name + "s" + ".csv"
+                        file_chmt_name = path_to_folderOutput + device_name + "s" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
-                        file_chmt_name = pathToFolderOutput + device_name + "b" + ".csv"
+                        file_chmt_name = path_to_folderOutput + device_name + "b" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
                 if len(drives_rem) == 0:
                     ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
@@ -1391,7 +1124,7 @@ class Container(BoxLayout):
 
                 coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
                 # --------------------------------------------------------------
-                file_name_control = pathToFolderOutput + device_name + "t.nc"
+                file_name_control = path_to_folderOutput + device_name + "t.nc"
                 file_out_control = open(file_name_control, 'w')
                 file_out_control.write(";start control\n")
                 file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
@@ -1403,7 +1136,7 @@ class Container(BoxLayout):
                 file_out_control.write(";m2")
                 file_out_control.close()
                 # --------------------------------------------------------------
-                file_name_main = pathToFolderOutput + device_name + ".nc"
+                file_name_main = path_to_folderOutput + device_name + ".nc"
                 file_code = open(file_name_main, 'w')
                 # --------------------------------------------------------------
                 file_code.write(";start\n")
@@ -1423,7 +1156,7 @@ class Container(BoxLayout):
                 file_code.write(";m2")
                 file_code.close()
                 # --------------------------------------------------------------
-                file_name = pathToFolderOutput + device_name + "x.nc"
+                file_name = path_to_folderOutput + device_name + "x.nc"
                 file_code = open(file_name, 'w')
                 # --------------------------------------------------------------
                 file_code.write(";start control\n")
@@ -1439,11 +1172,11 @@ class Container(BoxLayout):
                 self.print_custom("-------------------------------")
 
                 # --------------------------------------------------------------
-                file_input_name = pathToFolderOutput + device_name + "input" + str(size_x) + "x" + str(size_y) + ".txt"
-                file_input = pathToFolder + "input.txt"
+                file_input_name = path_to_folderOutput + device_name + "input" + str(size_x) + "x" + str(size_y) + ".txt"
+                file_input = path_to_folder + "input.txt"
                 shutil.copy(file_input, file_input_name)
                 # --------------------------------------------------------------
-                if copyToSddispenser:
+                if copy_to_sd_dispenser:
                     if len(drives_rem) == 1:
                         shutil.copy(file_name_control, file_sd)
                         shutil.copy(file_name_main, file_sd)
@@ -1457,7 +1190,7 @@ class Container(BoxLayout):
 
                 random.seed()
 
-                if showPlot:
+                if show_plot:
                     axes_x = []
                     axes_y = []
                     axes_xs = []
@@ -1515,14 +1248,14 @@ class Container(BoxLayout):
             file_options_lines = [NUMBER_NAME + ") " + str(device_name), NUMBER_RAZMER_X + ") " + str(size_x),
                                   NUMBER_RAZMER_Y + ") " + str(size_y), NUMBER_KOLVO_X + ") " + str(devices_number_x),
                                   NUMBER_KOLVO_Y + ") " + str(devices_number_y),
-                                  NUMBER_SHOW_PLOT + ") " + str(showPlot),
-                                  NUMBER_SD_CHMT + ") " + str(copyToSdChmt),
-                                  NUMBER_SD_dispenser + ") " + str(copyToSddispenser),
+                                  NUMBER_SHOW_PLOT + ") " + str(show_plot),
+                                  NUMBER_SD_CHMT + ") " + str(copy_to_sd_chmt),
+                                  NUMBER_SD_dispenser + ") " + str(copy_to_sd_dispenser),
                                   NUMBER_SPLIT_SIZE + ") " + str(split_size_type)]
             for kat in range(KOLVO_KATUSHEK):
                 file_options_lines.append("k" + str(kat + 1) + ") " + coils[kat])
 
-            file_options = open(pathToFolder + "optionsSP.txt", 'w')
+            file_options = open(path_to_folder + "optionsSP.txt", 'w')
             for strInput in file_options_lines:
                 file_options.write(strInput + "\n")
                 # self.PrintCustom(strInput)
@@ -1546,11 +1279,11 @@ class DisplayApp(App):
         global split_size_type
         global devices_number_x
         global devices_number_y
-        global showPlot
-        global copyToSdChmt
-        global copyToSddispenser
-        global pathToFolder
-        global pathToFolderOutput
+        global show_plot
+        global copy_to_sd_chmt
+        global copy_to_sd_dispenser
+        global path_to_folder
+        global path_to_folderOutput
         global coils
 
         bl_kat_l = BoxLayout()
@@ -1586,13 +1319,13 @@ class DisplayApp(App):
         self.root.bl_coils.add_widget(bl_kat_l)
         self.root.bl_coils.add_widget(bl_kat_r)
 
-        last_slash = pathToFolder.rfind("\\")
-        pathToFolder = pathToFolder[:last_slash + 1]
-        pathToFolderOutput = pathToFolder[:-1]
-        last_slash = pathToFolderOutput.rfind("\\")
-        pathToFolderOutput = pathToFolder[:last_slash + 1]
+        last_slash = path_to_folder.rfind("\\")
+        path_to_folder = path_to_folder[:last_slash + 1]
+        path_to_folderOutput = path_to_folder[:-1]
+        last_slash = path_to_folderOutput.rfind("\\")
+        path_to_folderOutput = path_to_folder[:last_slash + 1]
         # Read
-        path_to_file = pathToFolder + "optionsSP.txt"
+        path_to_file = path_to_folder + "optionsSP.txt"
         file_options = open(path_to_file, 'r')
         # Шаблон: х) параметр
         prev_i = 0
@@ -1615,19 +1348,19 @@ class DisplayApp(App):
                     split_size_type = True
             if strInput[0] == NUMBER_SHOW_PLOT:
                 if strInput.find("False") != -1:
-                    showPlot = False
+                    show_plot = False
                 else:
-                    showPlot = True
+                    show_plot = True
             if strInput[0] == NUMBER_SD_CHMT:
                 if strInput.find("False") != -1:
-                    copyToSdChmt = False
+                    copy_to_sd_chmt = False
                 else:
-                    copyToSdChmt = True
+                    copy_to_sd_chmt = True
             if strInput[0] == NUMBER_SD_dispenser:
                 if strInput.find("False") != -1:
-                    copyToSddispenser = False
+                    copy_to_sd_dispenser = False
                 else:
-                    copyToSddispenser = True
+                    copy_to_sd_dispenser = True
             if strInput[0] == "k":
                 pos = strInput.find(")")
                 i = int(strInput[1:pos]) - 1
@@ -1647,15 +1380,15 @@ class DisplayApp(App):
                 self.root.ids[str("kat" + str(i + 1))].text = coils[i]
         file_options.close()
 
-        self.root.ti_name.text = device_name
+        self.root.ti_device_name.text = device_name
         self.root.ti_size_x.text = str(size_x)
         self.root.ti_size_y.text = str(size_y)
         self.root.ti_devices_number_x.text = str(devices_number_x)
         self.root.ti_devices_number_y.text = str(devices_number_y)
-        self.root.cb_chart.active = showPlot
-        self.root.cb_sd_chmt.active = copyToSdChmt
-        self.root.cb_sd_dispenser.active = copyToSddispenser
-        self.root.cbSplitSize.active = split_size_type
+        self.root.cb_chart.active = show_plot
+        self.root.cb_sd_chmt.active = copy_to_sd_chmt
+        self.root.cb_sd_dispenser.active = copy_to_sd_dispenser
+        self.root.cb_split_size.active = split_size_type
 
         # print(self.root.ids)
         # self.root.ll_out.text = "sads"
@@ -1668,7 +1401,7 @@ class DisplayApp(App):
 # ***********************************************************************
 # Запуск проекта
 if __name__ == "__main__":
+    threadExit = Gui_Automizer.MyThread("exit")
+    threadExit.start()
     DisplayApp().run()
-# ***********************************************************************
-press_key('esc')
 # ***********************************************************************

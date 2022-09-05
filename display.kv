@@ -4,17 +4,17 @@
     text_size: self.size
 
 <Container>
-    tiRazmerX: tiRazmerX
-    tiRazmerY: tiRazmerY
-    tiKolvoX: tiKolvoX
-    tiKolvoY: tiKolvoY
-    tiName: tiName
-    cbGrafik: cbGrafik
-    cbSdChmt: cbSdChmt
-    cbSdDosator: cbSdDosator
-    cbSplitSize: cbSplitSize
-    blKatushki: blKatushki
-    llOut: llOut
+    ti_size_x: ti_size_x
+    ti_size_y: ti_size_y
+    ti_devices_number_x: ti_devices_number_x
+    ti_devices_number_y: ti_devices_number_y
+    ti_device_name: ti_device_name
+    cb_chart: cb_chart
+    cb_sd_chmt: cb_sd_chmt
+    cb_sd_dispenser: cb_sd_dispenser
+    cb_split_size: cb_split_size
+    bl_coils: bl_coils
+    ll_out: ll_out
     BoxLayout:
         spacing: 20
         orientation:'horizontal'
@@ -26,7 +26,7 @@
                 text:'Катушки'
                 size_hint:(1,.2)
             BoxLayout:
-                id: blKatushki
+                id: bl_coils
                 size_hint:(1,1.3)
             BoxLayout:
                 orientation:'vertical'
@@ -68,17 +68,17 @@
                         id:bInputPcad
                         text:'PCAD' 
                         on_release:
-                            root.InputPcad()
+                            root.input_pcad()
                     Button:
                         id:bInputSaved
                         text:'Существующий Input' 
                         on_release:
-                            root.InputSaved()
+                            root.input_saved()
                 Button:
                     id:bCorrectCoords
                     text:'Корректировка координат PCAD (файл *.csv)' 
                     on_release:
-                        root.CorrectCoords()
+                        root.correct_coords()
             BoxLayout:
                 orientation:'horizontal'
                 size_hint:(1,0.3)
@@ -86,7 +86,7 @@
                     text:'Название'
                     size_hint:(.5,1)
                 TextInput:
-                    id: tiName
+                    id: ti_device_name
                     hint_text:'name'
             BoxLayout:
                 size_hint:(1,1)
@@ -103,7 +103,7 @@
                             size_hint:(.2,1)
                             background_color: 0.1, 0.5, 0.6, 1
                         TextInput:
-                            id: tiRazmerX
+                            id: ti_size_x
                             hint_text:'1'
                     BoxLayout:
                         orientation:'horizontal'
@@ -111,7 +111,7 @@
                             text:'y'
                             size_hint:(.2,1)
                         TextInput:
-                            id: tiRazmerY
+                            id: ti_size_y
                             hint_text:'1'
                 BoxLayout:
                     size_hint:(1,0.7)
@@ -124,7 +124,7 @@
                             text:'x'
                             size_hint:(.2,1)
                         TextInput:
-                            id: tiKolvoX
+                            id: ti_devices_number_x
                             hint_text:'1'
                     BoxLayout:
                         orientation:'horizontal'
@@ -132,7 +132,7 @@
                             text:'y'
                             size_hint:(.2,1)
                         TextInput:
-                            id: tiKolvoY
+                            id: ti_devices_number_y
                             hint_text:'1'
             BoxLayout:
                 size_hint:(1,0.6)
@@ -140,7 +140,7 @@
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
-                        id:cbGrafik
+                        id:cb_chart
                         color:.294, .761, .623
                         size_hint:(.1,1)
                     CheckLabel:
@@ -148,7 +148,7 @@
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
-                        id:cbSdChmt
+                        id:cb_sd_chmt
                         color:.294, .761, .623
                         size_hint:(.1,1)
                     CheckLabel:
@@ -156,7 +156,7 @@
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
-                        id:cbSdDosator
+                        id:cb_sd_dispenser
                         color:.294, .761, .623
                         size_hint:(.1,1)
                     CheckLabel:
@@ -164,7 +164,7 @@
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
-                        id:cbSplitSize
+                        id:cb_split_size
                         color:.294, .761, .623
                         size_hint:(.1,1)
                     CheckLabel:
@@ -176,13 +176,13 @@
                     size_hint:(.3,0.6)
                     text:'Расчёт'
                     on_release:
-                        root.Raschet()
+                        root.raschet()
         BoxLayout:
             spacing: 5
             orientation:'vertical'
             ScrollView:
                 Label:
-                    id: llOut
+                    id: ll_out
                     text:'-----------------------\nВывод:\n-----------------------\n\n'
                     size_hint:(1,1)
                     size_hint: None, None     # <<<<<<<<<<
