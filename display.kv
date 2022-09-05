@@ -1,0 +1,189 @@
+<CheckLabel@Label>:
+    halign: 'left'
+    valign: 'middle'
+    text_size: self.size
+
+<Container>
+    tiRazmerX: tiRazmerX
+    tiRazmerY: tiRazmerY
+    tiKolvoX: tiKolvoX
+    tiKolvoY: tiKolvoY
+    tiName: tiName
+    cbGrafik: cbGrafik
+    cbSdChmt: cbSdChmt
+    cbSdDosator: cbSdDosator
+    cbSplitSize: cbSplitSize
+    blKatushki: blKatushki
+    llOut: llOut
+    BoxLayout:
+        spacing: 20
+        orientation:'horizontal'
+        BoxLayout:
+            size_hint:(1.2,1)
+            orientation:'vertical'
+            padding: [5,10,5,10]
+            Label:
+                text:'Катушки'
+                size_hint:(1,.2)
+            BoxLayout:
+                id: blKatushki
+                size_hint:(1,1.3)
+            BoxLayout:
+                orientation:'vertical'
+                size_hint:(1,0.6)
+                Label:
+                    text:'SOD80_S - диод'
+                Label:
+                    text:'SOT-23 - BAS40-06'
+                Label:
+                    text:'DB-1S - DB107S'
+                Label:
+                    text:'SM-6 - MOC3063'
+                Label:
+                    text:'SO8 - PIC12F675'
+        BoxLayout:
+            size_hint:(1,1)
+            orientation:'vertical'
+            padding: 20
+            spacing: 20
+            BoxLayout:
+                size_hint:(1,.8)
+                orientation:'vertical'
+                Label:
+                    text:'Проверь, что входной файл такого типа:'
+                Label:
+                    text:'"RefDes","Pattern","Type","Value","Layer","LocX","LocY","Rotation"'
+                Label:
+                    text:'"C3","0805","C0805","0.1","Top","58.786","7.018","270.0"' 
+                Label:
+                    text:'\nПри работе с PCAD, нужно сначала открыть\nнужный файл в PCAD и переключить окно на это.' 
+            BoxLayout:
+                orientation:'vertical'
+                size_hint:(1,.8)
+                Label:
+                    text:'Загрузка файла координат из:'
+                BoxLayout:
+                    orientation:'horizontal'
+                    Button:
+                        id:bInputPcad
+                        text:'PCAD' 
+                        on_release:
+                            root.InputPcad()
+                    Button:
+                        id:bInputSaved
+                        text:'Существующий Input' 
+                        on_release:
+                            root.InputSaved()
+                Button:
+                    id:bCorrectCoords
+                    text:'Корректировка координат PCAD (файл *.csv)' 
+                    on_release:
+                        root.CorrectCoords()
+            BoxLayout:
+                orientation:'horizontal'
+                size_hint:(1,0.3)
+                Label:
+                    text:'Название'
+                    size_hint:(.5,1)
+                TextInput:
+                    id: tiName
+                    hint_text:'name'
+            BoxLayout:
+                size_hint:(1,1)
+                orientation:'horizontal'
+                BoxLayout:
+                    size_hint:(1,0.7)
+                    orientation:'vertical'
+                    Label:
+                        text:'Размеры'
+                    BoxLayout:
+                        orientation:'horizontal'
+                        Label:
+                            text:'x'
+                            size_hint:(.2,1)
+                            background_color: 0.1, 0.5, 0.6, 1
+                        TextInput:
+                            id: tiRazmerX
+                            hint_text:'1'
+                    BoxLayout:
+                        orientation:'horizontal'
+                        Label:
+                            text:'y'
+                            size_hint:(.2,1)
+                        TextInput:
+                            id: tiRazmerY
+                            hint_text:'1'
+                BoxLayout:
+                    size_hint:(1,0.7)
+                    orientation:'vertical'
+                    Label:
+                        text:'Количество'
+                    BoxLayout:
+                        orientation:'horizontal'
+                        Label:
+                            text:'x'
+                            size_hint:(.2,1)
+                        TextInput:
+                            id: tiKolvoX
+                            hint_text:'1'
+                    BoxLayout:
+                        orientation:'horizontal'
+                        Label:
+                            text:'y'
+                            size_hint:(.2,1)
+                        TextInput:
+                            id: tiKolvoY
+                            hint_text:'1'
+            BoxLayout:
+                size_hint:(1,0.6)
+                orientation:'vertical'
+                BoxLayout:
+                    orientation:'horizontal'
+                    CheckBox:
+                        id:cbGrafik
+                        color:.294, .761, .623
+                        size_hint:(.1,1)
+                    CheckLabel:
+                        text: "График"
+                BoxLayout:
+                    orientation:'horizontal'
+                    CheckBox:
+                        id:cbSdChmt
+                        color:.294, .761, .623
+                        size_hint:(.1,1)
+                    CheckLabel:
+                        text: "Копировать на SD карту CHMT"
+                BoxLayout:
+                    orientation:'horizontal'
+                    CheckBox:
+                        id:cbSdDosator
+                        color:.294, .761, .623
+                        size_hint:(.1,1)
+                    CheckLabel:
+                        text: "Копировать на SD карту Дозатор"
+                BoxLayout:
+                    orientation:'horizontal'
+                    CheckBox:
+                        id:cbSplitSize
+                        color:.294, .761, .623
+                        size_hint:(.1,1)
+                    CheckLabel:
+                        text: "Разбить файлы по размеру компонентов"
+            BoxLayout:
+                size_hint:(1,0.6)
+                orientation:'horizontal'
+                Button:
+                    size_hint:(.3,0.6)
+                    text:'Расчёт'
+                    on_release:
+                        root.Raschet()
+        BoxLayout:
+            spacing: 5
+            orientation:'vertical'
+            ScrollView:
+                Label:
+                    id: llOut
+                    text:'-----------------------\nВывод:\n-----------------------\n\n'
+                    size_hint:(1,1)
+                    size_hint: None, None     # <<<<<<<<<<
+                    size: self.texture_size   # <<<<<<<<<<
