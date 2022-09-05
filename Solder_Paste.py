@@ -437,6 +437,16 @@ def call_file_picker():
     return filedialog.askopenfilename(filetypes=[("Correct file", ".csv")])
 
 
+def find_file_with_same_name(directory, file_name):
+    files = os.listdir(directory)
+    main_file_path = ""
+    for f in files:
+        if file_name.find(f) != -1:
+            main_file_path = directory + "\\" + f
+            break
+    return main_file_path
+
+
 class Container(BoxLayout):
     ti_size_x = ObjectProperty()
     ti_size_y = ObjectProperty()
@@ -461,23 +471,17 @@ class Container(BoxLayout):
         this_directory = path_to_folder[:point]
         point = this_directory.rfind("\\")
         this_directory = path_to_folder[:point]
-        error = False
-        file_path = call_file_picker()
+
+        file_path = call_file_picker()  # call window that allows to pick file
         point = file_path.rfind("/") + 1
         input_file_name = file_path[point:]
-        input_file_name = input_file_name.replace(".csv", "")
         input_file = file_path
-        files = os.listdir(this_directory)
-        main_file_path = ""
-        for f in files:
-            if f.find(".csv") != -1:
-                f = f.replace(".csv", "")
-                if input_file_name.find(f) != -1:
-                    main_file_path = this_directory + "\\" + f + ".csv"
-                    break
-        else:
+
+        main_file_path = find_file_with_same_name(directory=this_directory, file_name=input_file_name)
+        if main_file_path == "":
             print("Нет файла импорта")
             input_file = ""
+        error = False
 
         if input_file != "":
             fin = open(input_file, 'r')
