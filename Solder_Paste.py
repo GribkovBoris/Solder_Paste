@@ -1,9 +1,5 @@
 # ==================================================================
-import copy
-import numpy as np
 import shutil
-import os
-import weakref
 import math
 import matplotlib.pyplot as plt
 import random
@@ -11,25 +7,17 @@ import os
 import win32con
 import win32api
 import win32file
-from time import sleep
 from tkinter import *
-from tkinter import messagebox as mb
 import ctypes
 import tkinter as tk
 from tkinter import filedialog
-# ---------------------------------------------------------------
 import pyautogui
-import sys
 import time
-import threading
-import subprocess
 from threading import Thread
-from importlib import reload
 import pyperclip
-import traceback
-from pynput.keyboard import Key, Listener, Controller
+from pynput.keyboard import Key, Listener
 # ==================================================================
-# Импорт всех классов
+# Import kivy
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
@@ -42,7 +30,6 @@ from kivy.properties import ObjectProperty
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
-
 # ==============================================================================
 correctX = 0
 correctY = 0
@@ -64,13 +51,12 @@ class MyThread(Thread):
         listener.start()
 
     def run(self):
-        timerExit = 0
-        while (True):
-            time.sleep(0.1)
-            # print("ok")
-            if (timerExit > 100):
-                print("---------------- Аварийное завершение -------------------")
-                os._exit(0)
+        timer_exit = 0
+        time.sleep(0.1)
+        # print("ok")
+        if timer_exit > 100:
+            print("---------------- Аварийное завершение -------------------")
+            os._exit(0)
 
 
 # ***********************************************************************
@@ -102,7 +88,7 @@ def click(coords, delay=0.01):
     time.sleep(delay)
 
 
-def clickRight(coords, delay=0.01):
+def click_right(coords, delay=0.01):
     x = coords.x
     y = coords.y
     win32api.SetCursorPos((x, y))
@@ -111,7 +97,7 @@ def clickRight(coords, delay=0.01):
     time.sleep(delay)
 
 
-def dblClick(coords, delay=0.01):
+def dbl_click(coords, delay=0.01):
     x = coords.x
     y = coords.y
     win32api.SetCursorPos((x, y))
@@ -123,7 +109,7 @@ def dblClick(coords, delay=0.01):
     time.sleep(delay)
 
 
-def clickDown(coords, delay=0.01):
+def click_down(coords, delay=0.01):
     x = coords.x
     y = coords.y
     win32api.SetCursorPos((x, y))
@@ -131,7 +117,7 @@ def clickDown(coords, delay=0.01):
     time.sleep(delay)
 
 
-def clickUp(coords, delay=0.01):
+def click_up(coords, delay=0.01):
     x = coords.x
     y = coords.y
     win32api.SetCursorPos((x, y))
@@ -152,15 +138,15 @@ def hotkey(a, b):
 
 
 # ---------------------------------------------------------------
-def PressKey(key, delay=0.01):
+def press_key(key, delay=0.01):
     pyautogui.press(key)
-    if (delay > 0):
+    if delay > 0:
         time.sleep(delay)
 
 
-def PressKeys(key1, key2, delay=0.01):
+def press_keys(key1, key2, delay=0.01):
     hotkey(key1, key2)
-    if (delay > 0):
+    if delay > 0:
         time.sleep(delay)
 
 
@@ -178,23 +164,20 @@ NUMBER_KOLVO_X = "4"
 NUMBER_KOLVO_Y = "5"
 NUMBER_SHOW_PLOT = "6"
 NUMBER_SD_CHMT = "7"
-NUMBER_SD_DOSATOR = "8"
+NUMBER_SD_dispenser = "8"
 NUMBER_SPLIT_SIZE = "9"
 # LM358D - SO8 pic12f675
 # 0.1 - 0.47
-fileSd = "E:/"
+file_sd = "E:/"
 allowConvert = 0
 ignoreCoeff = 0
 stackError = 0
 coordCoef = 0.801
 xCoef = 1.0
 yCoef = 1.0
-sizeTypeSmall = True
+size_type_small = True
 chmtXCoef = 1.0
 chmtYCoef = 1.0
-showPlot = False
-copyToSdChmt = False
-copyToSdDosator = False
 PI = 3.14159265
 DOT_SMALL = 1
 DOT_MEDIUM = 2
@@ -206,18 +189,18 @@ DRIVE_REMOVABLE = 2
 # ***********************************************************************
 
 # ***********************************************************************
-deviceName = "test"
-razmerX = 1
-razmerY = 1
-kolvoX = 1
-kolvoY = 1
-splitSizeType = False
+device_name = "test"
+size_x = 1
+size_y = 1
+devices_number_x = 1
+devices_number_y = 1
+split_size_type = False
 showPlot = False
 copyToSdChmt = False
-copyToSdDosator = False
+copyToSddispenser = False
 KOLVO_KATUSHEK = 32
 KOLVO_LOTKOV = 3
-katushki = [" "] * KOLVO_KATUSHEK
+coils = [" "] * KOLVO_KATUSHEK
 pathToFolder = os.path.abspath(__file__)
 pathToFolderOutput = pathToFolder
 FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
@@ -298,7 +281,7 @@ stacks = []
 
 # ***********************************************************************
 class Component:
-    def __init__(self, center, angle, description, type, pattern_name, value):
+    def __init__(self, center, angle, description, comp_type, pattern_name, value):
         self.center = center
         self.center.x = self.center.x * xCoef
         self.center.y = self.center.y * yCoef
@@ -359,8 +342,9 @@ class Component:
         if pattern_name == "DB-1S":
             self.value = "107"
             self.angle = self.angle + 180
-        if (pattern_name.find("TLP521") != -1) or (value.find("TLP521") != -1) or (description.find("TLP521") != -1) or \
-                (pattern_name.find("K1010") != -1) or (value.find("K1010") != -1) or (description.find("K1010") != -1):
+        if (pattern_name.find("TLP521") != -1) or (value.find("TLP521") != -1) or \
+                (description.find("TLP521") != -1) or (pattern_name.find("K1010") != -1) or \
+                (value.find("K1010") != -1) or (description.find("K1010") != -1):
             self.pattern_name = "K1010"
             self.value = "K1010"
             self.angle = self.angle + 180
@@ -373,7 +357,6 @@ class Component:
             self.angle -= 360
         if pattern_name == "0805" and self.value == "3K":
             self.type = "R0805"
-            comp_type = "R0805"
         if self.value.find("40-06") != -1:
             self.value = "4006"
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -568,72 +551,72 @@ Window.title = "Solder Paste"
 
 
 class Container(BoxLayout):
-    tiRazmerX = ObjectProperty()
-    tiRazmerY = ObjectProperty()
-    tiKolvoX = ObjectProperty()
-    tiKolvoY = ObjectProperty()
-    tiName = ObjectProperty()
-    cbGrafik = ObjectProperty()
-    cbSdChmt = ObjectProperty()
-    cbSdDosator = ObjectProperty()
-    blKatushki = ObjectProperty()
-    llOut = ObjectProperty()
-    bInputPcad = ObjectProperty()
-    bInputSaved = ObjectProperty()
+    ti_size_x = ObjectProperty()
+    ti_size_y = ObjectProperty()
+    ti_devices_number_x = ObjectProperty()
+    ti_devices_number_y = ObjectProperty()
+    ti_name = ObjectProperty()
+    cb_chart = ObjectProperty()
+    cb_sd_chmt = ObjectProperty()
+    cb_sd_dispenser = ObjectProperty()
+    bl_coils = ObjectProperty()
+    ll_out = ObjectProperty()
+    b_input_pcad = ObjectProperty()
+    b_input_saved = ObjectProperty()
 
     def print_custom(self, text, end="\n"):
-        self.llOut.text += text + end
+        self.ll_out.text += text + end
         pass
 
     def input_pcad(self):
-        PressKeys('alt', 'tab', 0.8)
-        PressKey('alt', 0.2)
-        PressKey('right', 0.1)
-        PressKey('enter', 0.1)
+        press_keys('alt', 'tab', 0.8)
+        press_key('alt', 0.2)
+        press_key('right', 0.1)
+        press_key('enter', 0.1)
         for i in range(8):
-            PressKey('down')
-        PressKey('enter')
+            press_key('down')
+        press_key('enter')
         for i in range(3):
-            PressKey('tab')
-        PressKey('enter')
+            press_key('tab')
+        press_key('enter')
         for i in range(2):
-            PressKeys('shift', 'tab')
+            press_keys('shift', 'tab')
         for i in range(7):
-            PressKey('down')
-        PressKey('space')
+            press_key('down')
+        press_key('space')
         for i in range(8):
-            PressKey('tab')
+            press_key('tab')
             if (i == 6) or (i == 5):
-                PressKey('0')
-        PressKey('down')
-        PressKey('up')
-        PressKey('tab')
-        PressKey('tab')
-        PressKey('space', 1.5)
-        PressKey('alt')
-        PressKey('right')
-        PressKey('down')
-        PressKey('up')
-        PressKey('up')
-        PressKey('enter')
-        PressKey('alt')
-        PressKey('right')
-        PressKey('down')
-        PressKey('down')
-        PressKey('down')
-        PressKey('enter')
-        PressKeys('alt', 'f4', 0.2)
-        PressKey('tab')
-        PressKey('enter')
-        PressKey('alt')
-        PressKeys('alt', 'tab')
+                press_key('0')
+        press_key('down')
+        press_key('up')
+        press_key('tab')
+        press_key('tab')
+        press_key('space', 1.5)
+        press_key('alt')
+        press_key('right')
+        press_key('down')
+        press_key('up')
+        press_key('up')
+        press_key('enter')
+        press_key('alt')
+        press_key('right')
+        press_key('down')
+        press_key('down')
+        press_key('down')
+        press_key('enter')
+        press_keys('alt', 'f4', 0.2)
+        press_key('tab')
+        press_key('enter')
+        press_key('alt')
+        press_keys('alt', 'tab')
         file_input = pathToFolder + "Input.txt"
-        fout = open(file_input, 'w')
+        file_out = open(file_input, 'w')
         input_text = pyperclip.paste()
         input_text = input_text.replace('\n', '')
         print(input_text)
-        fout.write(input_text)
-        fout.close()
+        file_out.write(input_text)
+        file_out.close()
 
     def correct_coords(self):
         point = pathToFolder.rfind("\\")
@@ -649,107 +632,107 @@ class Container(BoxLayout):
         input_file_name = input_file_name.replace(".csv", "")
         input_file = file_path
         files = os.listdir(this_directory)
-        main_file = ""
+        main_file_path = ""
         for f in files:
             if f.find(".csv") != -1:
                 f = f.replace(".csv", "")
                 if input_file_name.find(f) != -1:
-                    main_file = this_directory + "\\" + f + ".csv"
+                    main_file_path = this_directory + "\\" + f + ".csv"
                     break
         else:
             print("Нет файла импорта")
             input_file = ""
 
-        if (input_file != ""):
+        if input_file != "":
             fin = open(input_file, 'r')
             print("Калибровочный файл: ", input_file)
             self.print_custom("Калибровочный файл: " + input_file)
-            fMain = open(main_file, 'r')
-            print("Основной файл: ", main_file)
-            self.print_custom("Основной файл: " + main_file)
+            file_main = open(main_file_path, 'r')
+            print("Основной файл: ", main_file_path)
+            self.print_custom("Основной файл: " + main_file_path)
             # ============================================================
-            startDecode = False
-            blockNumber = 0
+            start_decode = False
+            block_number = 0
             strings = []
-            strBlocks = ""
+            str_blocks = ""
             for strFile in fin:
-                if (startDecode):
-                    strBlocks = strBlocks + strFile
+                if start_decode:
+                    str_blocks = str_blocks + strFile
                 else:
-                    if (strFile.find("%") != -1):
-                        blockNumber += 1
-                        if (blockNumber == 4):
-                            startDecode = True
+                    if strFile.find("%") != -1:
+                        block_number += 1
+                        if block_number == 4:
+                            start_decode = True
                     continue
-            strings = strBlocks.split("\n")
+            strings = str_blocks.split("\n")
             # print(strings)
-            arrCoords = []
+            arr_coords = []
             for st in strings:
-                posStart = 0
+                pos_start = 0
                 for i in range(3):
-                    posStart = st.find(",", posStart) + 1
-                posEnd = posStart
+                    pos_start = st.find(",", pos_start) + 1
+                pos_end = pos_start
                 for i in range(2):
-                    posEnd = st.find(",", posEnd) + 1
-                coords = st[posStart:posEnd - 1]
-                posStart = st.find(",", posEnd) + 1
+                    pos_end = st.find(",", pos_end) + 1
+                coords = st[pos_start:pos_end - 1]
+                pos_start = st.find(",", pos_end) + 1
                 for i in range(3):
-                    posStart = st.find(",", posStart) + 1
-                posEnd = st.find(",", posStart)
-                desDef = st[posStart + 1:posEnd]
-                desDef = desDef.split(" ")[0]
+                    pos_start = st.find(",", pos_start) + 1
+                pos_end = st.find(",", pos_start)
+                des_def = st[pos_start + 1:pos_end]
+                des_def = des_def.split(" ")[0]
                 data = coords.split(",")
-                data.append(desDef)
-                arrCoords.append(data)
-            arrCoords.pop()
+                data.append(des_def)
+                arr_coords.append(data)
+            arr_coords.pop()
             fin.close()
             # ============================================================
-            startDecode = False
-            blockNumber = 0
+            start_decode = False
+            block_number = 0
             strings = []
-            strBlocks = ""
-            for strFile in fMain:
-                if (startDecode):
-                    strBlocks = strBlocks + strFile
+            str_blocks = ""
+            for strFile in file_main:
+                if start_decode:
+                    str_blocks = str_blocks + strFile
                 else:
-                    if (strFile.find("%") != -1):
-                        blockNumber += 1
-                        if (blockNumber == 4):
-                            startDecode = True
+                    if strFile.find("%") != -1:
+                        block_number += 1
+                        if block_number == 4:
+                            start_decode = True
                     continue
-            strings = strBlocks.split("\n")
+            strings = str_blocks.split("\n")
             # print(strings)
-            arrCoordsMain = []
+            arr_coords_main = []
             for st in strings:
-                posStart = 0
+                pos_start = 0
                 for i in range(3):
-                    posStart = st.find(",", posStart) + 1
-                posEnd = posStart
+                    pos_start = st.find(",", pos_start) + 1
+                pos_end = pos_start
                 for i in range(2):
-                    posEnd = st.find(",", posEnd) + 1
-                coords = st[posStart:posEnd - 1]
-                posStart = st.find(",", posEnd) + 1
+                    pos_end = st.find(",", pos_end) + 1
+                coords = st[pos_start:pos_end - 1]
+                pos_start = st.find(",", pos_end) + 1
                 for i in range(3):
-                    posStart = st.find(",", posStart) + 1
-                posEnd = st.find(",", posStart)
-                desDef = st[posStart + 1:posEnd]
-                desDef = desDef.split(" ")[0]
+                    pos_start = st.find(",", pos_start) + 1
+                pos_end = st.find(",", pos_start)
+                des_def = st[pos_start + 1:pos_end]
+                des_def = des_def.split(" ")[0]
                 data = coords.split(",")
-                data.append(desDef)
-                arrCoordsMain.append(data)
-            arrCoordsMain.pop()
+                data.append(des_def)
+                arr_coords_main.append(data)
+            arr_coords_main.pop()
             # ============================================================
-            for i in range(len(arrCoords)):
-                diffX = round(float(arrCoords[i][0]) - float(arrCoordsMain[i][0]), 3)
-                diffY = round(float(arrCoords[i][1]) - float(arrCoordsMain[i][1]), 3)
-                arrCoords[i][0] = str(diffX)
-                arrCoords[i][1] = str(diffY)
-                if (diffX == 0) and (diffY == 0):
-                    arrCoords[i][2] = "none"
-                # print(f'{i + 1}: {arrCoords[i]}')
-            fMain.close()
+            for i in range(len(arr_coords)):
+                diff_x = round(float(arr_coords[i][0]) - float(arr_coords_main[i][0]), 3)
+                diff_y = round(float(arr_coords[i][1]) - float(arr_coords_main[i][1]), 3)
+                arr_coords[i][0] = str(diff_x)
+                arr_coords[i][1] = str(diff_y)
+                if (diff_x == 0) and (diff_y == 0):
+                    arr_coords[i][2] = "none"
+                # print(f'{i + 1}: {arr_coords[i]}')
+            file_main.close()
             # ============================================================
-            if (not error):
+            if not error:
                 # numberComp = int(input("Количество компонентов в PCAD файле: "))
                 pyautogui.keyDown('alt')
                 time.sleep(0.1)
@@ -759,192 +742,190 @@ class Container(BoxLayout):
                 time.sleep(0.1)
                 pyautogui.keyUp('alt')
                 time.sleep(0.1)
-                PressKey('alt')
+                press_key('alt')
                 for i in range(2):
-                    PressKey('right')
-                PressKey('enter')
+                    press_key('right')
+                press_key('enter')
                 for i in range(4):
-                    PressKey('up')
-                PressKey('enter', 0.2)
-                exitFlag = False
+                    press_key('up')
+                press_key('enter', 0.2)
+                exit_flag = False
                 number = 0
-                prevRef = "NONE"
-                while (not exitFlag):
+                prev_ref = "NONE"
+                while not exit_flag:
                     # for i in range(7):
                     click(qPoint(x=839, y=366 - 40))  # scroll up
-                    PressKey('home', 0.1)
+                    press_key('home', 0.1)
                     time.sleep(0.1)
                     click(qPoint(x=882, y=366 - 40))  # select first ref
                     time.sleep(0.1)
                     pages = int(number / 15)  # 16 components in page
                     for i in range(pages):
-                        PressKey('pagedown', 0.05)
-                    numberLeft = number - pages * 15
-                    for i in range(numberLeft):
-                        PressKey('down', 0)
+                        press_key('pagedown', 0.05)
+                    number_left = number - pages * 15
+                    for i in range(number_left):
+                        press_key('down', 0)
                     time.sleep(0.1)
                     click(qPoint(x=1025, y=370 - 40), 0.6)  # properties
                     click(qPoint(x=848, y=361 - 40), 0.1)  # ref
                     click(qPoint(x=848, y=361 - 40), 0.2)  # ref
-                    PressKeys('ctrl', 'c', 0.1)
-                    copiedRef = pyperclip.paste()
-                    print(number, copiedRef)
-                    if (copiedRef == prevRef):
-                        exitFlag = True
+                    press_keys('ctrl', 'c', 0.1)
+                    copied_ref = pyperclip.paste()
+                    print(number, copied_ref)
+                    if copied_ref == prev_ref:
+                        exit_flag = True
                     else:
-                        prevRef = copiedRef
-                        for coords in arrCoords:
+                        prev_ref = copied_ref
+                        for coords in arr_coords:
                             # print(coords[2])
-                            if (copiedRef == coords[2]):
+                            if copied_ref == coords[2]:
                                 click(qPoint(x=1059, y=538), 0.05)  # x
                                 click(qPoint(x=1059, y=538), 0.1)  # x
-                                PressKeys('ctrl', 'x', 0.05)
-                                copiedCoord = pyperclip.paste()
-                                xNew = round(float(copiedCoord) + float(coords[0]), 3)
-                                pyperclip.copy(str(xNew))
+                                press_keys('ctrl', 'x', 0.05)
+                                copied_coord = pyperclip.paste()
+                                x_new = round(float(copied_coord) + float(coords[0]), 3)
+                                pyperclip.copy(str(x_new))
                                 time.sleep(0.05)
-                                PressKeys('ctrl', 'v', 0.2)
-                                PressKey('tab')
-                                PressKeys('ctrl', 'x', 0.05)
-                                copiedCoord = pyperclip.paste()
-                                yNew = round(float(copiedCoord) + float(coords[1]), 3)
-                                pyperclip.copy(str(yNew))
+                                press_keys('ctrl', 'v', 0.2)
+                                press_key('tab')
+                                press_keys('ctrl', 'x', 0.05)
+                                copied_coord = pyperclip.paste()
+                                y_new = round(float(copied_coord) + float(coords[1]), 3)
+                                pyperclip.copy(str(y_new))
                                 time.sleep(0.05)
-                                print("x: ", xNew, "y: ", yNew)
-                                PressKeys('ctrl', 'v', 0.2)
-                                PressKey('enter')
+                                print("x: ", x_new, "y: ", y_new)
+                                press_keys('ctrl', 'v', 0.2)
+                                press_key('enter')
                                 break
                         else:
-                            PressKey('enter')
+                            press_key('enter')
                         number += 1
-                    # exitFlag = True#!1111111111111111111111111111111111111
-                # PressKey('esc')
+                    # exit_flag = True#!1111111111111111111111111111111111111
+                # press_key('esc')
                 for i in range(6):
-                    PressKey('down')
-                PressKey('enter', 0.1)
+                    press_key('down')
+                press_key('enter', 0.1)
                 # Reports
-                if (True):
-                    PressKey('alt', 0.2)
-                    PressKey('right', 0.1)
-                    PressKey('enter', 0.1)
-                    for i in range(8):
-                        PressKey('down')
-                    PressKey('enter')
-                    for i in range(3):
-                        PressKey('tab')
-                    PressKey('enter')
-                    for i in range(2):
-                        PressKeys('shift', 'tab')
-                    for i in range(7):
-                        PressKey('down')
-                    PressKey('space')
-                    for i in range(8):
-                        PressKey('tab')
-                        if (i == 6) or (i == 5):
-                            PressKey('0')
-                    PressKey('down')
-                    PressKey('up')
-                    PressKey('tab')
-                    PressKey('tab')
-                    PressKey('space', 1.5)
-                    PressKey('alt')
-                    PressKey('right')
-                    PressKey('down')
-                    PressKey('up')
-                    PressKey('up')
-                    PressKey('enter')
-                    PressKey('alt')
-                    PressKey('right')
-                    PressKey('down')
-                    PressKey('down')
-                    PressKey('down')
-                    PressKey('enter')
-                    PressKeys('alt', 'f4', 0.2)
-                    PressKey('tab')
-                    PressKey('enter')
-                    PressKey('alt')
-                    PressKeys('alt', 'tab')
-                    file_input = pathToFolder + "Input.txt"
-                    fout = open(file_input, 'w')
-                    input_text = pyperclip.paste()
-                    input_text = input_text.replace('\n', '')
-                    # print(input_text)
-                    fout.write(input_text)
-                    fout.close()
+                press_key('alt', 0.2)
+                press_key('right', 0.1)
+                press_key('enter', 0.1)
+                for i in range(8):
+                    press_key('down')
+                press_key('enter')
+                for i in range(3):
+                    press_key('tab')
+                press_key('enter')
+                for i in range(2):
+                    press_keys('shift', 'tab')
+                for i in range(7):
+                    press_key('down')
+                press_key('space')
+                for i in range(8):
+                    press_key('tab')
+                    if (i == 6) or (i == 5):
+                        press_key('0')
+                press_key('down')
+                press_key('up')
+                press_key('tab')
+                press_key('tab')
+                press_key('space', 1.5)
+                press_key('alt')
+                press_key('right')
+                press_key('down')
+                press_key('up')
+                press_key('up')
+                press_key('enter')
+                press_key('alt')
+                press_key('right')
+                press_key('down')
+                press_key('down')
+                press_key('down')
+                press_key('enter')
+                press_keys('alt', 'f4', 0.2)
+                press_key('tab')
+                press_key('enter')
+                press_key('alt')
+                press_keys('alt', 'tab')
+                file_input = pathToFolder + "Input.txt"
+                file_out = open(file_input, 'w')
+                input_text = pyperclip.paste()
+                input_text = input_text.replace('\n', '')
+                # print(input_text)
+                file_out.write(input_text)
+                file_out.close()
 
-    def InputSaved(self):
-        global deviceName
-        global razmerX
-        global razmerY
+    def input_saved(self):
+        global device_name
+        global size_x
+        global size_y
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(filetypes=[("Input files", ".txt")])
         # D:/Programs/For_Work/Dev-Cpp/devcpp.exe
-        if (file_path.find("input") != -1):
-            fileName = file_path.split("/")[-1]
-            pos = fileName.rfind(".")
-            fileName = fileName[:pos]
-            deviceParams = fileName.split("input")
-            deviceName = deviceParams[0]
-            coords = deviceParams[1].split("x")
-            razmerX = float(coords[0])
-            razmerY = float(coords[1])
-            self.tiName.text = deviceName
-            self.tiRazmerX.text = str(razmerX)
-            self.tiRazmerY.text = str(razmerY)
+        if file_path.find("input") != -1:
+            file_name = file_path.split("/")[-1]
+            pos = file_name.rfind(".")
+            file_name = file_name[:pos]
+            device_params = file_name.split("input")
+            device_name = device_params[0]
+            coords = device_params[1].split("x")
+            size_x = float(coords[0])
+            size_y = float(coords[1])
+            self.ti_name.text = device_name
+            self.ti_size_x.text = str(size_x)
+            self.ti_size_y.text = str(size_y)
             shutil.copy(file_path, pathToFolder + "Input.txt")
         pass
 
-    def Raschet(self):
+    def raschet(self):
         self.print_custom("\n")
         if True:
-            fileName = "input.txt"
-            # global fileName
-            global splitSizeType
-            global deviceName
-            global razmerX
-            global razmerY
-            global kolvoX
-            global kolvoY
+            file_name = "input.txt"
+            # global file_name
+            global split_size_type
+            global device_name
+            global size_x
+            global size_y
+            global devices_number_x
+            global devices_number_y
             global showPlot
             global copyToSdChmt
-            global copyToSdDosator
+            global copyToSddispenser
             global pathToFolder
             global stackError
-            global katushki
-            self.llOut.text = ""
-            deviceName = self.tiName.text
-            razmerX = float(self.tiRazmerX.text)
-            razmerY = float(self.tiRazmerY.text)
-            kolvoX = int(self.tiKolvoX.text)
-            kolvoY = int(self.tiKolvoY.text)
-            if (self.cbGrafik.active):
+            global coils
+            self.ll_out.text = ""
+            device_name = self.ti_name.text
+            size_x = float(self.ti_size_x.text)
+            size_y = float(self.ti_size_y.text)
+            devices_number_x = int(self.ti_devices_number_x.text)
+            devices_number_y = int(self.ti_devices_number_y.text)
+            if self.cb_chart.active:
                 showPlot = True
             else:
                 showPlot = False
-            if (self.cbSdChmt.active):
+            if self.cb_sd_chmt.active:
                 copyToSdChmt = True
             else:
                 copyToSdChmt = False
-            if (self.cbSdDosator.active):
-                copyToSdDosator = True
+            if self.cb_sd_dispenser.active:
+                copyToSddispenser = True
             else:
-                copyToSdDosator = False
-            if (self.cbSplitSize.active):
-                splitSizeType = True
+                copyToSddispenser = False
+            if self.cbSplitSize.active:
+                split_size_type = True
             else:
-                splitSizeType = False
-            pathToFile = pathToFolder + fileName
-            if (kolvoX == 0):
-                kolvoX = 1
-            if (kolvoY == 0):
-                kolvoY = 1
-            allowConvert = 1
+                split_size_type = False
+            path_to_file = pathToFolder + file_name
+            if devices_number_x == 0:
+                devices_number_x = 1
+            if devices_number_y == 0:
+                devices_number_y = 1
             # print(self.ids)
             for kat in range(KOLVO_KATUSHEK):
-                katushki[kat] = self.ids[str("kat" + str(kat + 1))].text
-                katushka = katushki[kat].split()
-                if (len(katushka) == 2):
+                coils[kat] = self.ids[str("kat" + str(kat + 1))].text
+                katushka = coils[kat].split()
+                if len(katushka) == 2:
                     stacks[kat].value = katushka[1]
                     stacks[kat].pattern_name = katushka[0]
                     try:
@@ -953,112 +934,111 @@ class Container(BoxLayout):
                         self.height = 0
 
             # --------------------------------------------------------------
-            splitCount = 1
-            if (splitSizeType):
-                splitCount = 2
-            for splitFile in range(splitCount):
-                fin = open(pathToFile, 'r')
-                if (splitFile):
-                    sizeTypeSmall = True
+            split_count = 1
+            if split_size_type:
+                split_count = 2
+            for split_file in range(split_count):
+                fin = open(path_to_file, 'r')
+                if split_file:
+                    size_type_small = True
                 else:
-                    sizeTypeSmall = False
+                    size_type_small = False
                 # Write
-                if (splitSizeType):
-                    if (sizeTypeSmall):
-                        markFile = "s"
+                if split_size_type:
+                    if size_type_small:
+                        mark_file = "s"
                     else:
-                        markFile = "b"
+                        mark_file = "b"
                 else:
-                    markFile = ""
-                fileChmtName = pathToFolderOutput + deviceName + markFile + ".csv"
-                fout = open(fileChmtName, 'w')
+                    mark_file = ""
+                file_chmt_name = pathToFolderOutput + device_name + mark_file + ".csv"
+                file_out = open(file_chmt_name, 'w')
                 # ---------------------- Origin offset ----------------------
-                fout.close()
-                fout = open(fileChmtName, 'ab')
+                file_out.close()
+                file_out = open(file_chmt_name, 'ab')
                 # FIRST_STRING = b'\x25\x2c\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6'
-                fout.write(FIRST_STRING)
-                fout.close()
-                fout = open(fileChmtName, 'a')
-                fout.write("\n")
-                fout.write("65535,0,")
-                fout.write("0")
-                fout.write(",")
-                fout.write("0")
-                fout.write(",")
-                fout.write("0")
-                fout.write(",")
-                fout.write("0")
-                if (False):
-                    fout.write(str(razmerX))
-                    fout.write(",")
-                    fout.write(str(razmerY))
-                    fout.write(",")
-                    fout.write(str(kolvoX))
-                    fout.write(",")
-                    fout.write(str(kolvoY))
-                fout.write("\n\n")
+                file_out.write(FIRST_STRING)
+                file_out.close()
+                file_out = open(file_chmt_name, 'a')
+                file_out.write("\n")
+                file_out.write("65535,0,")
+                file_out.write("0")
+                file_out.write(",")
+                file_out.write("0")
+                file_out.write(",")
+                file_out.write("0")
+                file_out.write(",")
+                file_out.write("0")
+                #    file_out.write(str(size_x))
+                #    file_out.write(",")
+                #    file_out.write(str(size_y))
+                #    file_out.write(",")
+                #    file_out.write(str(devices_number_x))
+                #    file_out.write(",")
+                #    file_out.write(str(devices_number_y))
+                file_out.write("\n\n")
                 # ---------------------- List of stacks ----------------------
                 # c1cfd5bbc6abd2c6
-                fout.close()
-                fout = open(fileChmtName, 'ab')
+                file_out.close()
+                file_out = open(file_chmt_name, 'ab')
                 # SECOND_STRING = b'\x25\x2c\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6'
-                fout.write(SECOND_STRING)
-                fout.close()
-                fout = open(fileChmtName, 'a')
-                fout.write("\n")
-                feedRate = 2
+                file_out.write(SECOND_STRING)
+                file_out.close()
+                file_out = open(file_chmt_name, 'a')
+                file_out.write("\n")
+                feed_rate = 2
                 for kat in stacks:
-                    if ((kat.number != 0) and (kat.pattern_name != " ")):
-                        fout.write("65535,1,")
-                        fout.write(str(kat.number))
-                        fout.write(",")
-                        xOffset = Smd.get_x_offset(kat.pattern_name)
-                        fout.write(str(xOffset))
-                        fout.write(",")
-                        yOffset = Smd.get_y_offset(kat.pattern_name)
-                        fout.write(str(yOffset))
-                        fout.write(",")
-                        feedRate = Smd.get_feed_rate(kat.pattern_name)
-                        fout.write(str(feedRate))
-                        fout.write(".00,\"")
-                        fout.write(kat.pattern_name)
-                        if (kat.value != ""):
-                            fout.write(" (")
-                            fout.write(kat.value)
-                            fout.write(")")
-                        fout.write("\",")
-                        fout.write("\n")
-                fout.write("\n")
+                    if (kat.number != 0) and (kat.pattern_name != " "):
+                        file_out.write("65535,1,")
+                        file_out.write(str(kat.number))
+                        file_out.write(",")
+                        x_offset = Smd.get_x_offset(kat.pattern_name)
+                        file_out.write(str(x_offset))
+                        file_out.write(",")
+                        y_offset = Smd.get_y_offset(kat.pattern_name)
+                        file_out.write(str(y_offset))
+                        file_out.write(",")
+                        feed_rate = Smd.get_feed_rate(kat.pattern_name)
+                        file_out.write(str(feed_rate))
+                        file_out.write(".00,\"")
+                        file_out.write(kat.pattern_name)
+                        if kat.value != "":
+                            file_out.write(" (")
+                            file_out.write(kat.value)
+                            file_out.write(")")
+                        file_out.write("\",")
+                        file_out.write("\n")
+                file_out.write("\n")
                 # ---------------------- List of PCB ----------------------
                 # c6b4b0e5312c58
-                fout.close()
-                fout = open(fileChmtName, 'ab')
+                file_out.close()
+                file_out = open(file_chmt_name, 'ab')
                 # THIRD_STRING = b'\x25\x2c\xc6\xb4\xb0\xe5\x31\x2c\x58'
-                fout.write(THIRD_STRING)
-                fout.close()
-                fout = open(fileChmtName, 'a')
-                fout.write("\n")
-                fout.write("65535,")
-                if (razmerX * razmerY == 1):
-                    fout.write(str(3))
+                file_out.write(THIRD_STRING)
+                file_out.close()
+                file_out = open(file_chmt_name, 'a')
+                file_out.write("\n")
+                file_out.write("65535,")
+                if size_x * size_y == 1:
+                    file_out.write(str(3))
                 else:
-                    fout.write(str(4))
-                fout.write(",")
-                fout.write(f"{razmerX},{razmerY},")
-                fout.write(f"{kolvoX},{kolvoY}\n\n")
+                    file_out.write(str(4))
+                file_out.write(",")
+                file_out.write(f"{size_x},{size_y},")
+                file_out.write(f"{devices_number_x},{devices_number_y}\n\n")
                 # ---------------------- List of components ----------------------
                 # ccf9cdb7bac5
-                fout.close()
-                fout = open(fileChmtName, 'ab')
+                file_out.close()
+                file_out = open(file_chmt_name, 'ab')
                 # FOURTH_STRING = b'\x25\x2c\xcc\xf9\xcd\xb7\xba\xc5'
-                fout.write(FOURTH_STRING)
-                fout.close()
-                fout = open(fileChmtName, 'a')
-                fout.write("\n")
+                file_out.write(FOURTH_STRING)
+                file_out.close()
+                file_out = open(file_chmt_name, 'a')
+                file_out.write("\n")
                 # ----------------------------------------------------------------
                 number = 0
-                numberAuto = 0
-                numberDecline = 0
+                number_auto = 0
+                number_decline = 0
                 head = 0
                 stack = 0
                 value = ""
@@ -1095,17 +1075,16 @@ class Container(BoxLayout):
                 table_data = [
                     ['error', 'number', 'head', 'stack', 'x', 'y', 'angle', 'h', '0', 'type', 'description', 'speed']
                 ]
-                # table_data.append(['error', 'number', 'head', 'stack', 'x', 'y', 'angle', 'h', '0', 'type', 'description', 'speed'])
                 components = []
-                componentsFail = []
+                components_fail = []
                 # self.PrintCustom("k")
-                searchingStart = 1
-                searchingStartCnt = 0
+                searching_start = 1
+                searching_start_cnt = 0
                 for strInput in fin:
-                    if (searchingStart):
-                        searchingStartCnt += 1
-                        if (searchingStartCnt >= 4):
-                            searchingStart = 0
+                    if searching_start:
+                        searching_start_cnt += 1
+                        if searching_start_cnt >= 4:
+                            searching_start = 0
                     else:
                         dummy = strInput
                         dummy = dummy.replace("\n", "")
@@ -1122,96 +1101,96 @@ class Container(BoxLayout):
                         pos = 0
                         # RefDes,Name,Type,Value,Layer,X,Y,Rotation
                         description = properties[0]
-                        pName = properties[1]
+                        prop_name = properties[1]
                         comment = properties[2]
                         value = properties[3]
-                        pLayer = properties[4]
+                        prop_layer = properties[4]
                         x = float(properties[5])
                         y = float(properties[6])
                         angle = float(properties[7])
-                        if (value == "104"):
+                        if value == "104":
                             value = "0.1"
-                        # self.PrintCustom("----------------------------------")
-                        # self.PrintCustom(properties)
-                        if (pName == "TSSOP-20"):
-                            pName = pName
-                        if (pName == "SO8"):
-                            pName = pName
+                        if prop_name == "TSSOP-20":
+                            prop_name = prop_name
+                        if prop_name == "SO8":
+                            prop_name = prop_name
 
-                        curComp = Component(Point(x, y), angle, description, comment, pName, value)
-                        if (curComp.type == "BAS40-06"):
+                        cur_comp = Component(Point(x, y), angle, description, comment, prop_name, value)
+                        if cur_comp.type == "BAS40-06":
                             kek = 1
 
-                        boolStr = "True"
-                        if (curComp.error == False):
-                            boolStr = "False"
-                        table_data.append([boolStr, str(number), str(head), str(curComp.stack), str(curComp.center.x),
-                                           str(curComp.center.y), str(round(curComp.angle)), str(curComp.height),
-                                           str(0), str(curComp.type), str(curComp.description), str(speed)])
+                        bool_str = "True"
+                        if not cur_comp.error:
+                            bool_str = "False"
+                        table_data.append([bool_str, str(number), str(head), str(cur_comp.stack),
+                                           str(cur_comp.center.x), str(cur_comp.center.y),
+                                           str(round(cur_comp.angle)), str(cur_comp.height),
+                                           str(0), str(cur_comp.type), str(cur_comp.description), str(speed)])
                         found = False
                         number += 1
-                        if (curComp.error == False):
-                            components.append(curComp)
+                        if not cur_comp.error:
+                            components.append(cur_comp)
                             found = True
                             # Формирование кода для станка
-                            numberAuto += 1
+                            number_auto += 1
                             # if(not self.root.ids[str("cbKat"+str(kat.number))].enabled):
                             #   flag = False
-                            if (not splitSizeType):
-                                if (curComp.sizeType == 0):
+                            if not split_size_type:
+                                if cur_comp.sizeType == 0:
                                     head = 2
                                 else:
                                     head = 1
                             else:
                                 # Не подходящие по размеру компоненты пропускаю.
-                                if (sizeTypeSmall):
+                                if size_type_small:
                                     # Исключаю большие и чередую головки
-                                    if (curComp.sizeType > 0):
-                                        curComp.skip = 1
+                                    if cur_comp.sizeType > 0:
+                                        cur_comp.skip = 1
                                     else:
-                                        if (head == 2):
+                                        if head == 2:
                                             head = 1
                                         else:
                                             head = 2
                                 else:
                                     # Исключаю маленькие и задаю головки
-                                    if (curComp.sizeType == 0):
-                                        curComp.skip = 1
+                                    if cur_comp.sizeType == 0:
+                                        cur_comp.skip = 1
                                     else:
-                                        if (curComp.sizeType == 1):
+                                        if cur_comp.sizeType == 1:
                                             head = 2
                                         else:
                                             head = 1
-                            real_angle = round(curComp.angle)
-                            descStr = curComp.value
-                            if (curComp.value != ""):
-                                descStr = str(curComp.description) + " " + descStr
-                                descStr += " "
-                                descStr += str(curComp.type)
+                            real_angle = round(cur_comp.angle)
+                            desc_str = cur_comp.value
+                            if cur_comp.value != "":
+                                desc_str = str(cur_comp.description) + " " + desc_str
+                                desc_str += " "
+                                desc_str += str(cur_comp.type)
                             else:
-                                descStr = curComp.type
+                                desc_str = cur_comp.type
 
-                            # if(not curComp.onlyPaste):
-                            outX = curComp.center.x
-                            outY = curComp.center.y
-                            fout.write(
-                                f'{numberAuto},{head},{curComp.stack},{round(outX, 3)},{round(outY, 3)},{real_angle},{curComp.height},{curComp.skip},{speed},"{descStr}","{curComp.description}"\n')
+                            # if(not cur_comp.onlyPaste):
+                            out_x = cur_comp.center.x
+                            out_y = cur_comp.center.y
+                            file_out.write(
+                                f'{number_auto},{head},{cur_comp.stack},{round(out_x, 3)},'
+                                f'{round(out_y, 3)},{real_angle},{cur_comp.height},{cur_comp.skip},'
+                                f'{speed},"{desc_str}","{cur_comp.description}"\n')
 
-                            if (curComp.center.x == 0.0):
-                                self.print_custom(f'{curComp.type} - ошибка, х = 0')
-                                # self.PrintCustom(f'{numberAuto},{head},{curComp.stack},{curComp.center.x},{curComp.center.y},{round(curComp.angle)},{curComp.height},0,"{curComp.type}","{curComp.description}",{speed}\n')
+                            if cur_comp.center.x == 0.0:
+                                self.print_custom(f'{cur_comp.type} - ошибка, х = 0')
 
-                        if (not found):
-                            numberDecline += 1
-                            componentsFail.append(curComp)
-                fout.close()
+                        if not found:
+                            number_decline += 1
+                            components_fail.append(cur_comp)
+                file_out.close()
                 fin.close()
 
                 # self.PrintCustom("-------------------------------------------------------------------")
             # self.PrintCustom(f"Катушки:")
             for kat in stacks:
-                if (kat.number > 0):
-                    if (kat.value != ""):
+                if kat.number > 0:
+                    if kat.value != "":
                         pass
                         # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}, {kat.value}","")
                     else:
@@ -1219,30 +1198,29 @@ class Container(BoxLayout):
                         # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}","")
                     flag = 0
                     # self.PrintCustom("")
-                    onlyDotFlag = False
+                    only_dot_flag = False
                     for com in components:
-                        katValue = kat.value
-                        if (katValue.find("*") != -1):
-                            katValue = katValue.replace("*", "")
-                            onlyDotFlag = True
-                        # self.PrintCustom(f"com.stack = {com.stack}, com.value = {com.value}, com.type = {com.type}, kat.type = {kat.type}")
-                        if ((com.pattern_name == kat.pattern_name) and (com.value == katValue)):
-                            if (not onlyDotFlag):
+                        kat_value = kat.value
+                        if kat_value.find("*") != -1:
+                            kat_value = kat_value.replace("*", "")
+                            only_dot_flag = True
+                        if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
+                            if not only_dot_flag:
                                 flag = 1
                             else:
                                 flag = 2
                             break
-                    if (flag == 0):
+                    if flag == 0:
                         # self.PrintCustom(" - не используется")
                         self.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
-                    if (flag == 1):
+                    if flag == 1:
                         # self.PrintCustom("")
                         self.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
-                    if (flag == 2):
+                    if flag == 2:
                         # self.PrintCustom("Только паста")
                         self.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
                 else:
-                    if (kat.value != ""):
+                    if kat.value != "":
                         pass
                         # self.PrintCustom(f"Вручную -\t{kat.pattern_name}, {kat.value}")
                     else:
@@ -1250,11 +1228,11 @@ class Container(BoxLayout):
                         # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
                     stackError = 2
 
-            if (stackError):
+            if stackError:
                 self.print_custom("-------------------------------------------------------------------")
-                if (stackError == 1):
+                if stackError == 1:
                     self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
-                if (stackError == 2):
+                if stackError == 2:
                     self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
                 self.print_custom("-------------------------------------------------------------------\n")
 
@@ -1262,27 +1240,27 @@ class Container(BoxLayout):
 
             self.print_custom("-------------------------------")
             self.print_custom(f"Количество компонентов - {number}")
-            self.print_custom(f"Количество компонентов автоматической пайки - {numberAuto}")
-            self.print_custom(f"Количество необработанных компонентов - {numberDecline}:")
+            self.print_custom(f"Количество компонентов автоматической пайки - {number_auto}")
+            self.print_custom(f"Количество необработанных компонентов - {number_decline}:")
             i = 0
-            typeUnique = []
-            valueUnique = []
-            for k in componentsFail:
-                allowAdding = False
+            type_unique = []
+            value_unique = []
+            for k in components_fail:
+                allow_adding = False
                 # self.PrintCustom("+++++++++++++++++++++++++")
-                # self.PrintCustom(len(typeUnique))
-                if (len(typeUnique) == 0):
-                    allowAdding = True
+                # self.PrintCustom(len(type_unique))
+                if len(type_unique) == 0:
+                    allow_adding = True
                 else:
                     kk = 0
-                    allowAdding = True
-                    for kk in range(len(typeUnique)):
-                        if (k.type == typeUnique[kk]) and (k.value == valueUnique[kk]):
-                            allowAdding = False
-                # allowAdding = True
-                if (allowAdding == True):
-                    typeUnique.append(k.type)
-                    valueUnique.append(k.value)
+                    allow_adding = True
+                    for kk in range(len(type_unique)):
+                        if (k.type == type_unique[kk]) and (k.value == value_unique[kk]):
+                            allow_adding = False
+                # allow_adding = True
+                if allow_adding:
+                    type_unique.append(k.type)
+                    value_unique.append(k.value)
                     i += 1
                     self.print_custom(f"{i}) {k.description}, {k.pattern_name}, {k.type}, {k.value}")
 
@@ -1291,281 +1269,268 @@ class Container(BoxLayout):
 
             drives = win32api.GetLogicalDriveStrings()
             drives = drives.split('\000')[:-1]
-            drivesRem = []
+            drives_rem = []
             for root in drives:
                 if win32file.GetDriveTypeW(root) == DRIVE_REMOVABLE:
-                    drivesRem.append(root)
-            if (len(drivesRem) == 1):
-                fileSd = drivesRem[0]
-            # print(len(drivesRem))
-            if (copyToSdChmt):
-                if (len(drivesRem) == 1):
-                    if (not splitSizeType):
-                        shutil.copy(fileChmtName, fileSd)
+                    drives_rem.append(root)
+            if len(drives_rem) == 1:
+                file_sd = drives_rem[0]
+            # print(len(drives_rem))
+            if copyToSdChmt:
+                if len(drives_rem) == 1:
+                    if not split_size_type:
+                        shutil.copy(file_chmt_name, file_sd)
                     else:
-                        fileChmtName = pathToFolderOutput + deviceName + "s" + ".csv"
-                        shutil.copy(fileChmtName, fileSd)
-                        fileChmtName = pathToFolderOutput + deviceName + "b" + ".csv"
-                        shutil.copy(fileChmtName, fileSd)
-                if (len(drivesRem) == 0):
+                        file_chmt_name = pathToFolderOutput + device_name + "s" + ".csv"
+                        shutil.copy(file_chmt_name, file_sd)
+                        file_chmt_name = pathToFolderOutput + device_name + "b" + ".csv"
+                        shutil.copy(file_chmt_name, file_sd)
+                if len(drives_rem) == 0:
                     ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
-                if (len(drivesRem) > 1):
-                    ctypes.windll.user32.MessageBoxW(0,
-                                                     u"Найдено больше одной SD-карты, оставьте нужную!\nФайл не записан.",
-                                                     u"Ошибка", 0)
+                if len(drives_rem) > 1:
+                    ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл не "
+                                                        u"записан.", u"Ошибка", 0)
 
-            if (components):
-                # MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+            if components:
                 # ----- Подготовка файла для дозатора -----
                 # ------------ Read PNP file --------------
                 # --------------------------------------------------------------
                 # Coord ged and mux coeff
                 coords = []
-                coordsSave = []
+                coords_save = []
                 for com in components:
                     for coord in com.pins:
                         coords.append(coord)
                 for com in coords:
-                    coordsSave.append(com)
+                    coords_save.append(com)
                 # --------------------------------------------------------------
                 self.print_custom(f"Количество точек - {len(coords)}")
                 self.print_custom("-------------------------------")
                 # --------------------------------------------------------------
-                coordsSort = []
+                coords_sort = []
 
-                indexMin = 0
+                index_min = 0
 
-                dotMin = Point(0, 0)
-                lenMin = 10000.0
+                dot_min = Point(0, 0)
+                len_min = 10000.0
                 for i in range(0, len(coords) - 1):
-                    lenq = math.sqrt(math.pow((coords[i].x), 2) + math.pow((coords[i].y), 2))
-                    if (lenMin == 0.0) or (lenMin > lenq):
-                        lenMin = lenq
-                        dotMin.x = coords[i].x
-                        dotMin.y = coords[i].y
-                        dotMin.line = coords[i].line
-                        indexMin = i
+                    lenq = math.sqrt(math.pow(coords[i].x, 2) + math.pow(coords[i].y, 2))
+                    if (len_min == 0.0) or (len_min > lenq):
+                        len_min = lenq
+                        dot_min.x = coords[i].x
+                        dot_min.y = coords[i].y
+                        dot_min.line = coords[i].line
+                        index_min = i
 
                 self.print_custom(f"")
 
-                dot = Point(dotMin.x, dotMin.y, dotMin.line)
-                coordsSort.append(dot)
-                coords.pop(indexMin)
+                dot = Point(dot_min.x, dot_min.y, dot_min.line)
+                coords_sort.append(dot)
+                coords.pop(index_min)
                 # --------------------------------------------------------------
                 cnt = 0
-                while (len(coords) > 0):
+                while len(coords) > 0:
                     lenq = 0.0
-                    minLen = 0.0
-                    minLenIndex = 0
+                    min_len = 0.0
+                    min_len_index = 0
                     for i in range(len(coords)):
                         # if(coords[i].line != LINE_END):
-                        lenq = math.sqrt(math.pow((coords[i].x - coordsSort[-1].x), 2) + \
-                                         math.pow((coords[i].y - coordsSort[-1].y), 2))
-                        if ((minLen == 0) or (minLen > lenq)):
-                            minLen = lenq
-                            minLenIndex = i
+                        lenq = math.sqrt(math.pow((coords[i].x - coords_sort[-1].x), 2) +
+                                         math.pow((coords[i].y - coords_sort[-1].y), 2))
+                        if (min_len == 0) or (min_len > lenq):
+                            min_len = lenq
+                            min_len_index = i
 
-                    qdot = Point(coords[minLenIndex].x, coords[minLenIndex].y, coords[minLenIndex].line)
-                    coordsSort.append(qdot)
-                    coords.pop(minLenIndex)
-                    if (qdot.line == LINE_START):
-                        qdot = Point(coords[minLenIndex].x, coords[minLenIndex].y, coords[minLenIndex].line)
-                        coordsSort.append(qdot)
-                        coords.pop(minLenIndex)
+                    qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
+                    coords_sort.append(qdot)
+                    coords.pop(min_len_index)
+                    if qdot.line == LINE_START:
+                        qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
+                        coords_sort.append(qdot)
+                        coords.pop(min_len_index)
                     else:
-                        if (qdot.line == LINE_END):
-                            qdot = Point(coords[minLenIndex - 1].x, coords[minLenIndex - 1].y,
-                                         coords[minLenIndex - 1].line)
-                            coordsSort.append(qdot)
-                            coords.pop(minLenIndex - 1)
+                        if qdot.line == LINE_END:
+                            qdot = Point(coords[min_len_index - 1].x, coords[min_len_index - 1].y,
+                                         coords[min_len_index - 1].line)
+                            coords_sort.append(qdot)
+                            coords.pop(min_len_index - 1)
                 # --------------------------------------------------------------
-                boardX = 0
-                boardY = 0
-                coordsNum = len(coordsSort)
-                for boardX in range(kolvoX):
-                    for boardY in range(kolvoY):
-                        if ((boardX > 0) or (boardY > 0)):
+                board_x = 0
+                board_y = 0
+                coordsNum = len(coords_sort)
+                for board_x in range(devices_number_x):
+                    for board_y in range(devices_number_y):
+                        if (board_x > 0) or (board_y > 0):
                             for coord in range(coordsNum):
-                                qdot = Point(coordsSort[coord].x + razmerX * boardX, \
-                                             coordsSort[coord].y + razmerY * boardY, coordsSort[coord].line)
-                                coordsSort.append(qdot)
+                                qdot = Point(coords_sort[coord].x + size_x * board_x,
+                                             coords_sort[coord].y + size_y * board_y,
+                                             coords_sort[coord].line)
+                                coords_sort.append(qdot)
                 # --------------------------------------------------------------
-                if (True):
-                    dotMax = Point(0, 0)
-                    lenMax = 0.0
-                    for i in range(0, len(coordsSort) - 1):
-                        lenq = math.sqrt(math.pow((coordsSort[i].x), 2) + math.pow((coordsSort[i].y), 2))
-                        if (lenMax == 0.0) or (lenMax < lenq):
-                            lenMax = lenq
-                            dotMax.x = coordsSort[i].x
-                            dotMax.y = coordsSort[i].y
+                if True:
+                    dot_max = Point(0, 0)
+                    len_max = 0.0
+                    for i in range(0, len(coords_sort) - 1):
+                        lenq = math.sqrt(math.pow(coords_sort[i].x, 2) + math.pow(coords_sort[i].y, 2))
+                        if (len_max == 0.0) or (len_max < lenq):
+                            len_max = lenq
+                            dot_max.x = coords_sort[i].x
+                            dot_max.y = coords_sort[i].y
 
-                dotMaxB = Point(dotMax.x, dotMax.y - (kolvoY - 1) * razmerY)
-                dotMinT = Point(dotMin.x, dotMin.y + (kolvoY - 1) * razmerY)
+                dot_max_b = Point(dot_max.x, dot_max.y - (devices_number_y - 1) * size_y)
+                dot_max_t = Point(dot_min.x, dot_min.y + (devices_number_y - 1) * size_y)
 
-                dotMin.x = dotMin.x * 100
-                dotMin.y = dotMin.y * 100
-                dotMax.x = dotMax.x * 100
-                dotMax.y = dotMax.y * 100
-                dotMinT.x = dotMinT.x * 100
-                dotMinT.y = dotMinT.y * 100
-                dotMaxB.x = dotMaxB.x * 100
-                dotMaxB.y = dotMaxB.y * 100
+                dot_min.x = dot_min.x * 100
+                dot_min.y = dot_min.y * 100
+                dot_max.x = dot_max.x * 100
+                dot_max.y = dot_max.y * 100
+                dot_max_t.x = dot_max_t.x * 100
+                dot_max_t.y = dot_max_t.y * 100
+                dot_max_b.x = dot_max_b.x * 100
+                dot_max_b.y = dot_max_b.y * 100
 
-                coordsCal = []
-                coordsCal.append(dotMin)
-                coordsCal.append(dotMinT)
-                coordsCal.append(dotMax)
-                coordsCal.append(dotMaxB)
+                coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
                 # --------------------------------------------------------------
-                fileNameControl = pathToFolderOutput + deviceName + "t.nc"
-                foutControl = open(fileNameControl, 'w')
-                foutControl.write(";start control\n")
-                foutControl.write(f"d0:x{round(dotMin.x)}y{round(dotMin.y)}z0\n")
-                foutControl.write(f"d0:x{round(dotMinT.x)}y{round(dotMinT.y)}z0\n")
-                foutControl.write(f"d0:x{round(dotMax.x)}y{round(dotMax.y)}z0\n")
-                foutControl.write(f"d0:x{round(dotMaxB.x)}y{round(dotMaxB.y)}z0\n")
-                foutControl.write(f"d0:x0y0z0\n")
-                foutControl.write(";end\n")
-                foutControl.write(";m2")
-                foutControl.close()
+                file_name_control = pathToFolderOutput + device_name + "t.nc"
+                file_out_control = open(file_name_control, 'w')
+                file_out_control.write(";start control\n")
+                file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
+                file_out_control.write(f"d0:x{round(dot_max_t.x)}y{round(dot_max_t.y)}z0\n")
+                file_out_control.write(f"d0:x{round(dot_max.x)}y{round(dot_max.y)}z0\n")
+                file_out_control.write(f"d0:x{round(dot_max_b.x)}y{round(dot_max_b.y)}z0\n")
+                file_out_control.write(f"d0:x0y0z0\n")
+                file_out_control.write(";end\n")
+                file_out_control.write(";m2")
+                file_out_control.close()
                 # --------------------------------------------------------------
-                fileNameMain = pathToFolderOutput + deviceName + ".nc"
-                fCode = open(fileNameMain, 'w')
+                file_name_main = pathToFolderOutput + device_name + ".nc"
+                file_code = open(file_name_main, 'w')
                 # --------------------------------------------------------------
-                fCode.write(";start\n")
+                file_code.write(";start\n")
                 # --------------------------------------------------------------
-                for i in range(len(coordsSort)):
-                    coordsSort[i].x = (coordsSort[i].x * 100)
-                    coordsSort[i].y = (coordsSort[i].y * 100)
-                    if ((coordsSort[i].line == LINE_START) or (coordsSort[i].line == LINE_END)):
+                for i in range(len(coords_sort)):
+                    coords_sort[i].x = (coords_sort[i].x * 100)
+                    coords_sort[i].y = (coords_sort[i].y * 100)
+                    if (coords_sort[i].line == LINE_START) or (coords_sort[i].line == LINE_END):
                         prefix = "l"
                     else:
-                        prefix = "d" + str(coordsSort[i].line)
-                    fCode.write(f"{prefix}:x{round(coordsSort[i].x)}y{round(coordsSort[i].y)}z0\n")
-                    # self.PrintCustom(f"{prefix}:{coordsSort[i].x},{coordsSort[i].y}")
+                        prefix = "d" + str(coords_sort[i].line)
+                    file_code.write(f"{prefix}:x{round(coords_sort[i].x)}y{round(coords_sort[i].y)}z0\n")
+                    # self.PrintCustom(f"{prefix}:{coords_sort[i].x},{coords_sort[i].y}")
                 # --------------------------------------------------------------
-                fCode.write(f"d0:x0y0z0\n")
-                fCode.write(";end\n")
-                fCode.write(";m2")
-                fCode.close()
+                file_code.write(f"d0:x0y0z0\n")
+                file_code.write(";end\n")
+                file_code.write(";m2")
+                file_code.close()
                 # --------------------------------------------------------------
-                fileName = pathToFolderOutput + deviceName + "x.nc"
-                fCode = open(fileName, 'w')
+                file_name = pathToFolderOutput + device_name + "x.nc"
+                file_code = open(file_name, 'w')
                 # --------------------------------------------------------------
-                fCode.write(";start control\n")
-                fCode.write(f"d0:x{round(dotMin.x)}y{round(dotMin.y)}z0\n")
-                fCode.write(";end\n")
-                fCode.write(";m2")
-                fCode.close()
+                file_code.write(";start control\n")
+                file_code.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
+                file_code.write(";end\n")
+                file_code.write(";m2")
+                file_code.close()
                 # self.PrintCustom("-------------------------------")
-                self.print_custom(f"Файл для станка CHM-T36:\n     {fileChmtName}\n")
-                self.print_custom(f"Файл для дозатора (калибровочный):\n     {fileNameControl}\n")
-                self.print_custom(f"Файл для дозатора (основной):\n     {fileName}")
-                self.print_custom(f"Файл для дозатора (основной):\n     {fileName}")
+                self.print_custom(f"Файл для станка CHM-T36:\n     {file_chmt_name}\n")
+                self.print_custom(f"Файл для дозатора (калибровочный):\n     {file_name_control}\n")
+                self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
+                self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
                 self.print_custom("-------------------------------")
 
                 # --------------------------------------------------------------
-                fileNameInput = pathToFolderOutput + deviceName + "input" + str(razmerX) + "x" + str(razmerY) + ".txt"
+                file_input_name = pathToFolderOutput + device_name + "input" + str(size_x) + "x" + str(size_y) + ".txt"
                 file_input = pathToFolder + "input.txt"
-                shutil.copy(file_input, fileNameInput)
+                shutil.copy(file_input, file_input_name)
                 # --------------------------------------------------------------
-                if (copyToSdDosator):
-                    if (len(drivesRem) == 1):
-                        shutil.copy(fileNameControl, fileSd)
-                        shutil.copy(fileNameMain, fileSd)
-                        shutil.copy(fileName, fileSd)
-                        shutil.copy(fileName, fileSd)
-                    if (len(drivesRem) == 0):
+                if copyToSddispenser:
+                    if len(drives_rem) == 1:
+                        shutil.copy(file_name_control, file_sd)
+                        shutil.copy(file_name_main, file_sd)
+                        shutil.copy(file_name, file_sd)
+                        shutil.copy(file_name, file_sd)
+                    if len(drives_rem) == 0:
                         ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
-                    if (len(drivesRem) > 1):
-                        ctypes.windll.user32.MessageBoxW(0,
-                                                         u"Найдено больше одной SD-карты, оставьте нужную!\nФайл не записан.",
-                                                         u"Ошибка", 0)
+                    if len(drives_rem) > 1:
+                        ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл "
+                                                            u"не записан.", u"Ошибка", 0)
 
                 random.seed()
 
                 if showPlot:
-                    axesX = []
-                    axesY = []
-                    axesXs = []
-                    axesYs = []
-                    axesXc = []
-                    axesYc = []
-                    axesXr = [0, 0]
-                    axesYr = [0, 0]
-                    axesXl = []
-                    axesYl = []
-                    axesTxl = []
-                    axesTyl = []
+                    axes_x = []
+                    axes_y = []
+                    axes_xs = []
+                    axes_ys = []
+                    axes_xc = []
+                    axes_yc = []
+                    axes_xr = [0, 0]
+                    axes_yr = [0, 0]
+                    axes_xl = []
+                    axes_yl = []
+                    axes_t_xl = []
+                    axes_t_yl = []
                     plt.ion()
-                    for i in coordsSort:
-                        if (axesXr[1] < i.x / 100):
-                            axesXr[1] = i.x / 100 + 5
-                        if (axesYr[1] < i.y / 100):
-                            axesYr[1] = i.y / 100 + 5
-                    if (True):
-                        for k in components:
-                            if (k.value != ""):
-                                plt.text(k.center.x - len(k.value) / 2, k.center.y + 0.5 + random.random(), k.value)
+                    for i in coords_sort:
+                        if axes_xr[1] < i.x / 100:
+                            axes_xr[1] = i.x / 100 + 5
+                        if axes_yr[1] < i.y / 100:
+                            axes_yr[1] = i.y / 100 + 5
+                    for k in components:
+                        if k.value != "":
+                            plt.text(k.center.x - len(k.value) / 2, k.center.y + 0.5 + random.random(), k.value)
+                        else:
+                            plt.text(k.center.x - len(k.type) / 2, k.center.y + 0.5, k.type)
+                        axes_xc.append(k.center.x)
+                        axes_yc.append(k.center.y)
+                    line_flag = False
+                    for i in coords_cal:
+                        axes_t_xl.append(i.x / 100)
+                        axes_t_yl.append(i.y / 100)
+                    for i in coords_save:
+                        axes_xs.append(i.x)
+                        axes_ys.append(i.y)
+                    for i in coords_sort:
+                        axes_x.append(i.x / 100)
+                        axes_y.append(i.y / 100)
+                        if True:
+                            if i.line == 1:
+                                line_flag = True
+                                axes_xl.append(i.x / 100)
+                                axes_yl.append(i.y / 100)
                             else:
-                                plt.text(k.center.x - len(k.type) / 2, k.center.y + 0.5, k.type)
-                            axesXc.append(k.center.x)
-                            axesYc.append(k.center.y)
-                            # for k in coordsSort:
-                    #    axesXc.append(k.x) 
-                    #    axesYc.append(k.y)
-                    lineFlag = False
-                    for i in coordsCal:
-                        axesTxl.append(i.x / 100)
-                        axesTyl.append(i.y / 100)
-                    for i in coordsSave:
-                        axesXs.append(i.x)
-                        axesYs.append(i.y)
-                    for i in coordsSort:
-                        axesX.append(i.x / 100)
-                        axesY.append(i.y / 100)
-                        if (True):
-                            if (i.line == 1):
-                                lineFlag = True
-                                axesXl.append(i.x / 100)
-                                axesYl.append(i.y / 100)
-                            else:
-                                if (lineFlag == True):
-                                    lineFlag = False
-                                    axesXl.append(i.x / 100)
-                                    axesYl.append(i.y / 100)
-                    plt.plot(axesX, axesY, 'ro')
-                    plt.plot(axesXc, axesYc, 'g+')
-                    plt.plot(axesTxl, axesTyl, 'bs')
+                                if line_flag:
+                                    line_flag = False
+                                    axes_xl.append(i.x / 100)
+                                    axes_yl.append(i.y / 100)
+                    plt.plot(axes_x, axes_y, 'ro')
+                    plt.plot(axes_xc, axes_yc, 'g+')
+                    plt.plot(axes_t_xl, axes_t_yl, 'bs')
                     plt.axis('equal')
                     plt.draw()
                     # plt.pause(0.1)
                     plt.ioff()
                     plt.show()
 
-            fOptionsLines = []
-            fOptionsLines.append(NUMBER_NAME + ") " + str(deviceName))
-            fOptionsLines.append(NUMBER_RAZMER_X + ") " + str(razmerX))
-            fOptionsLines.append(NUMBER_RAZMER_Y + ") " + str(razmerY))
-            fOptionsLines.append(NUMBER_KOLVO_X + ") " + str(kolvoX))
-            fOptionsLines.append(NUMBER_KOLVO_Y + ") " + str(kolvoY))
-            fOptionsLines.append(NUMBER_SHOW_PLOT + ") " + str(showPlot))
-            fOptionsLines.append(NUMBER_SD_CHMT + ") " + str(copyToSdChmt))
-            fOptionsLines.append(NUMBER_SD_DOSATOR + ") " + str(copyToSdDosator))
-            fOptionsLines.append(NUMBER_SPLIT_SIZE + ") " + str(splitSizeType))
+            file_options_lines = [NUMBER_NAME + ") " + str(device_name), NUMBER_RAZMER_X + ") " + str(size_x),
+                                  NUMBER_RAZMER_Y + ") " + str(size_y), NUMBER_KOLVO_X + ") " + str(devices_number_x),
+                                  NUMBER_KOLVO_Y + ") " + str(devices_number_y),
+                                  NUMBER_SHOW_PLOT + ") " + str(showPlot),
+                                  NUMBER_SD_CHMT + ") " + str(copyToSdChmt),
+                                  NUMBER_SD_dispenser + ") " + str(copyToSddispenser),
+                                  NUMBER_SPLIT_SIZE + ") " + str(split_size_type)]
             for kat in range(KOLVO_KATUSHEK):
-                fOptionsLines.append("k" + str(kat + 1) + ") " + katushki[kat])
+                file_options_lines.append("k" + str(kat + 1) + ") " + coils[kat])
 
-            fOptions = open(pathToFolder + "optionsSP.txt", 'w')
-            for strInput in fOptionsLines:
-                fOptions.write(strInput + "\n")
+            file_options = open(pathToFolder + "optionsSP.txt", 'w')
+            for strInput in file_options_lines:
+                file_options.write(strInput + "\n")
                 # self.PrintCustom(strInput)
-            fOptions.close()
+            file_options.close()
             # ***********************************************************************
 
 
-class displayApp(App):
+class DisplayApp(App):
 
     # Создание всех виджетов (объектов)
     def __init__(self):
@@ -1575,125 +1540,125 @@ class displayApp(App):
         print('ok')
 
     def on_start(self):
-        global deviceName
-        global razmerX
-        global razmerY
-        global splitSizeType
-        global kolvoX
-        global kolvoY
+        global device_name
+        global size_x
+        global size_y
+        global split_size_type
+        global devices_number_x
+        global devices_number_y
         global showPlot
         global copyToSdChmt
-        global copyToSdDosator
+        global copyToSddispenser
         global pathToFolder
         global pathToFolderOutput
-        global katushki
+        global coils
 
-        blKatL = BoxLayout()
-        blKatL.orientation = "vertical"
-        blKatR = BoxLayout()
-        blKatR.orientation = "vertical"
+        bl_kat_l = BoxLayout()
+        bl_kat_l.orientation = "vertical"
+        bl_kat_r = BoxLayout()
+        bl_kat_r.orientation = "vertical"
         for kat in range(KOLVO_KATUSHEK):
             num = KOLVO_KATUSHEK - kat - 1
-            blKat = BoxLayout()
-            blKat.orientation = "horizontal"
-            textStr = "№" + str(num + 1)
-            if (kat < KOLVO_LOTKOV):
-                textStr = textStr + "(" + str(3 - kat) + ")"
-            katLabel = Label(text=textStr)
-            katTextInput = TextInput(hint_text="1")
-            katTextInput.id = "kat" + str(num + 1)
-            self.root.ids[katTextInput.id] = katTextInput
-            katTextInput.size_hint = (2, 1)
-            katTextInput.background_color = (1, 1, 0, 1)
-            cbEnable = CheckBox(active=True)
-            cbEnable.id = "enKat" + str(num + 1)
-            cbEnable.color = (1, 0, 1, 1)
-            blKat.add_widget(katLabel)
-            # blKat.add_widget(cbEnable)
-            blKat.add_widget(katTextInput)
-            if (num % 2):
-                blKatR.add_widget(blKat)
+            bl_kat = BoxLayout()
+            bl_kat.orientation = "horizontal"
+            text_str = "№" + str(num + 1)
+            if kat < KOLVO_LOTKOV:
+                text_str = text_str + "(" + str(3 - kat) + ")"
+            kat_label = Label(text=text_str)
+            kat_text_input = TextInput(hint_text="1")
+            kat_text_input.id = "kat" + str(num + 1)
+            self.root.ids[kat_text_input.id] = kat_text_input
+            kat_text_input.size_hint = (2, 1)
+            kat_text_input.background_color = (1, 1, 0, 1)
+            cb_enable = CheckBox(active=True)
+            cb_enable.id = "enKat" + str(num + 1)
+            cb_enable.color = (1, 0, 1, 1)
+            bl_kat.add_widget(kat_label)
+            # bl_kat.add_widget(cb_enable)
+            bl_kat.add_widget(kat_text_input)
+            if num % 2:
+                bl_kat_r.add_widget(bl_kat)
             else:
-                blKatL.add_widget(blKat)
-        katTextInputq = TextInput(hint_text="1")
-        katTextInputq.id = "kat"
-        self.root.blKatushki.orientation = "horizontal"
-        self.root.blKatushki.add_widget(blKatL)
-        self.root.blKatushki.add_widget(blKatR)
+                bl_kat_l.add_widget(bl_kat)
+        kat_text_input = TextInput(hint_text="1")
+        kat_text_input.id = "kat"
+        self.root.bl_coils.orientation = "horizontal"
+        self.root.bl_coils.add_widget(bl_kat_l)
+        self.root.bl_coils.add_widget(bl_kat_r)
 
-        lastSlash = pathToFolder.rfind("\\")
-        pathToFolder = pathToFolder[:lastSlash + 1]
+        last_slash = pathToFolder.rfind("\\")
+        pathToFolder = pathToFolder[:last_slash + 1]
         pathToFolderOutput = pathToFolder[:-1]
-        lastSlash = pathToFolderOutput.rfind("\\")
-        pathToFolderOutput = pathToFolder[:lastSlash + 1]
+        last_slash = pathToFolderOutput.rfind("\\")
+        pathToFolderOutput = pathToFolder[:last_slash + 1]
         # Read
-        pathToFile = pathToFolder + "optionsSP.txt"
-        fOptions = open(pathToFile, 'r')
+        path_to_file = pathToFolder + "optionsSP.txt"
+        file_options = open(path_to_file, 'r')
         # Шаблон: х) параметр
-        prevI = 0
-        fOptionsLines = fOptions.readlines()
-        for strInput in fOptionsLines:
-            if (strInput[0] == NUMBER_NAME):
-                deviceName = strInput[3:-1]
-            if (strInput[0] == NUMBER_RAZMER_X):
-                razmerX = float(strInput[3:-1])
-            if (strInput[0] == NUMBER_RAZMER_Y):
-                razmerY = float(strInput[3:-1])
-            if (strInput[0] == NUMBER_KOLVO_X):
-                kolvoX = int(strInput[3:-1])
-            if (strInput[0] == NUMBER_KOLVO_Y):
-                kolvoY = int(strInput[3:-1])
-            if (strInput[0] == NUMBER_SPLIT_SIZE):
-                if (strInput.find("False") != -1):
-                    splitSizeType = False
+        prev_i = 0
+        file_options_lines = file_options.readlines()
+        for strInput in file_options_lines:
+            if strInput[0] == NUMBER_NAME:
+                device_name = strInput[3:-1]
+            if strInput[0] == NUMBER_RAZMER_X:
+                size_x = float(strInput[3:-1])
+            if strInput[0] == NUMBER_RAZMER_Y:
+                size_y = float(strInput[3:-1])
+            if strInput[0] == NUMBER_KOLVO_X:
+                devices_number_x = int(strInput[3:-1])
+            if strInput[0] == NUMBER_KOLVO_Y:
+                devices_number_y = int(strInput[3:-1])
+            if strInput[0] == NUMBER_SPLIT_SIZE:
+                if strInput.find("False") != -1:
+                    split_size_type = False
                 else:
-                    splitSizeType = True
-            if (strInput[0] == NUMBER_SHOW_PLOT):
-                if (strInput.find("False") != -1):
+                    split_size_type = True
+            if strInput[0] == NUMBER_SHOW_PLOT:
+                if strInput.find("False") != -1:
                     showPlot = False
                 else:
                     showPlot = True
-            if (strInput[0] == NUMBER_SD_CHMT):
-                if (strInput.find("False") != -1):
+            if strInput[0] == NUMBER_SD_CHMT:
+                if strInput.find("False") != -1:
                     copyToSdChmt = False
                 else:
                     copyToSdChmt = True
-            if (strInput[0] == NUMBER_SD_DOSATOR):
-                if (strInput.find("False") != -1):
-                    copyToSdDosator = False
+            if strInput[0] == NUMBER_SD_dispenser:
+                if strInput.find("False") != -1:
+                    copyToSddispenser = False
                 else:
-                    copyToSdDosator = True
-            if (strInput[0] == "k"):
+                    copyToSddispenser = True
+            if strInput[0] == "k":
                 pos = strInput.find(")")
                 i = int(strInput[1:pos]) - 1
-                if (i > prevI + 1):
-                    j = prevI + 1
-                    while (j < i):
-                        smdKat = Smd(j, " ", " ")
-                        stacks.append(smdKat)
+                if i > prev_i + 1:
+                    j = prev_i + 1
+                    while j < i:
+                        smd_kat = Smd(j, " ", " ")
+                        stacks.append(smd_kat)
                         j += 1
-                prevI = i
-                katushki[i] = strInput[pos + 2:-1]
-                paramKat = katushki[i].split()
-                if (len(paramKat) < 2):
-                    paramKat = [" ", " "]
-                smdKat = Smd(i + 1, paramKat[0], paramKat[1])
-                stacks.append(smdKat)
-                self.root.ids[str("kat" + str(i + 1))].text = katushki[i]
-        fOptions.close()
+                prev_i = i
+                coils[i] = strInput[pos + 2:-1]
+                param_kat = coils[i].split()
+                if len(param_kat) < 2:
+                    param_kat = [" ", " "]
+                smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
+                stacks.append(smd_kat)
+                self.root.ids[str("kat" + str(i + 1))].text = coils[i]
+        file_options.close()
 
-        self.root.tiName.text = deviceName
-        self.root.tiRazmerX.text = str(razmerX)
-        self.root.tiRazmerY.text = str(razmerY)
-        self.root.tiKolvoX.text = str(kolvoX)
-        self.root.tiKolvoY.text = str(kolvoY)
-        self.root.cbGrafik.active = showPlot
-        self.root.cbSdChmt.active = copyToSdChmt
-        self.root.cbSdDosator.active = copyToSdDosator
-        self.root.cbSplitSize.active = splitSizeType
+        self.root.ti_name.text = device_name
+        self.root.ti_size_x.text = str(size_x)
+        self.root.ti_size_y.text = str(size_y)
+        self.root.ti_devices_number_x.text = str(devices_number_x)
+        self.root.ti_devices_number_y.text = str(devices_number_y)
+        self.root.cb_chart.active = showPlot
+        self.root.cb_sd_chmt.active = copyToSdChmt
+        self.root.cb_sd_dispenser.active = copyToSddispenser
+        self.root.cbSplitSize.active = split_size_type
 
         # print(self.root.ids)
-        # self.root.llOut.text = "sads"
+        # self.root.ll_out.text = "sads"
 
     # Основной метод для построения программы
     def build(self):
@@ -1703,7 +1668,7 @@ class displayApp(App):
 # ***********************************************************************
 # Запуск проекта
 if __name__ == "__main__":
-    displayApp().run()
+    DisplayApp().run()
 # ***********************************************************************
-PressKey('esc')
+press_key('esc')
 # ***********************************************************************
