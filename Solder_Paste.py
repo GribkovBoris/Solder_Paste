@@ -12,20 +12,7 @@ from tkinter import *
 from tkinter import filedialog
 # ==================================================================
 import Gui_Automizer
-# ==================================================================
-# Import kivy
-from kivy.app import App
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
-from kivy.uix.checkbox import CheckBox
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.floatlayout import FloatLayout
-from kivy.properties import ObjectProperty
-from kivy.clock import Clock
-from kivy.lang import Builder
-from kivy.core.window import Window
+import Gui_Kivy
 
 
 # ==================================================================
@@ -63,9 +50,6 @@ size_type_small = True
 chmtXCoef = 1.0
 chmtYCoef = 1.0
 PI = 3.14159265
-DOT_SMALL = 1
-DOT_MEDIUM = 2
-DOT_BIG = 3
 LINE_START = 8
 LINE_END = 9
 # ***********************************************************************
@@ -165,26 +149,50 @@ stacks = []
 
 # ***********************************************************************
 class Component:
-    def __init__(self, center, angle, description, comp_type, pattern_name, value):
-        self.center = center
-        self.center.x = self.center.x * xCoef
-        self.center.y = self.center.y * yCoef
-        self.angle = 90 + angle
-        if self.angle > 360:
+    DOT_SMALL = 1
+    DOT_MEDIUM = 2
+    DOT_BIG = 3
+
+    def correct_angles(self, angle):
+        if self.pattern_name == "SM-6":
+            self.angle = angle
+        if self.pattern_name == "SO8":
+            self.angle = angle
+        if self.pattern_name == "TSSOP_20":
+            self.angle = angle
+        if self.pattern_name == "SOT-23":
+            self.angle = angle
+        if self.pattern_name == "ATMEGA8":
+            self.angle = angle
+        if self.pattern_name == "DB-1S":
+            self.angle = self.angle + 180
+        if self.angle >= 360:
             self.angle -= 360
-        self.description = description
-        self.pattern_name = pattern_name
-        self.type = comp_type
-        self.value = value
-        self.onlyPaste = False
-        self.skip = 0
-        real_angle = angle
+
+    def correct_values(self):
+        if (self.pattern_name.find("TLP521") != -1) or (self.value.find("TLP521") != -1) or \
+                (self.description.find("TLP521") != -1) or (self.pattern_name.find("K1010") != -1) or \
+                (self.value.find("K1010") != -1) or (self.description.find("K1010") != -1):
+            self.pattern_name = "K1010"
+            self.value = "K1010"
+            self.angle = self.angle + 180
+        if self.pattern_name == "TO-269AA":
+            self.pattern_name = "MB8S"
+            self.value = "MB8S"
+            self.angle = self.angle + 270
+            self.real_angle = self.real_angle + 270
+        if self.pattern_name == "0805" and self.value == "3K":
+            self.type = "R0805"
+        if self.value.find("40-06") != -1:
+            self.value = "4006"
         if self.value == "400Kx2":
             self.value = "430K"
         if self.value == "BZV55C":
             self.value = "5V1"
         if self.value == "50K":
             self.value = "51K"
+        if self.pattern_name == "DB-1S":
+            self.value = "107"
         if self.value == "Value":
             self.value = ""
         if self.value == "":
@@ -211,46 +219,173 @@ class Component:
             self.value = "5V1"
         if self.value.find("10X16") != -1:
             self.value = "10X16"
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        if pattern_name == "SM-6":
-            self.angle = angle
-        if pattern_name == "SO8":
-            self.angle = angle
-        if pattern_name == "TSSOP_20":
-            self.angle = angle
-        if pattern_name == "SOT-23":
-            self.angle = angle
-        if pattern_name == "ATMEGA8":
-            self.angle = angle
-        if pattern_name == "DB-1S":
-            self.value = "107"
-            self.angle = self.angle + 180
-        if (pattern_name.find("TLP521") != -1) or (value.find("TLP521") != -1) or \
-                (description.find("TLP521") != -1) or (pattern_name.find("K1010") != -1) or \
-                (value.find("K1010") != -1) or (description.find("K1010") != -1):
-            self.pattern_name = "K1010"
-            self.value = "K1010"
-            self.angle = self.angle + 180
-        if pattern_name == "TO-269AA":
-            self.pattern_name = "MB8S"
-            self.value = "MB8S"
-            self.angle = self.angle + 270
-            real_angle = real_angle + 270
-        if self.angle >= 360:
-            self.angle -= 360
-        if pattern_name == "0805" and self.value == "3K":
-            self.type = "R0805"
-        if self.value.find("40-06") != -1:
-            self.value = "4006"
+    def fill_dots(self):
+        if self.pattern_name == "0805":
+            self.pins.append(Point(-2.21 / 2, 0, self.DOT_SMALL))
+            self.pins.append(Point(2.21 / 2, 0, self.DOT_SMALL))
+            if self.angle > 90:
+                self.angle -= 180
+        if self.pattern_name == "1206":
+            self.pins.append(Point(-3.25 / 2, 0, self.DOT_MEDIUM))
+            self.pins.append(Point(3.25 / 2, 0, self.DOT_MEDIUM))
+            if self.angle > 90:
+                self.angle -= 180
+        if self.pattern_name == "2512":
+            self.pins.append(Point(-3, 0, self.DOT_BIG))
+            self.pins.append(Point(3, 0, self.DOT_BIG))
+            self.pins.append(Point(-3, 1, self.DOT_BIG))
+            self.pins.append(Point(3, 1, self.DOT_BIG))
+            self.pins.append(Point(-3, -1, self.DOT_BIG))
+            self.pins.append(Point(3, -1, self.DOT_BIG))
+            if self.angle > 90:
+                self.angle -= 180
+        if (ignoreRotation and (self.angle <= 90)) or not ignoreRotation:
+            if (self.pattern_name == "SOD323") or (self.pattern_name == "LED_0805"):
+                self.pins.append(Point(-2.21 / 2, 0, self.DOT_SMALL))
+                self.pins.append(Point(2.21 / 2, 0, self.DOT_SMALL))
+            if self.pattern_name == "10X16":
+                self.pins.append(Point(-1.7, 0, self.DOT_MEDIUM))
+                self.pins.append(Point(1.7, 0, self.DOT_MEDIUM))
+                self.pins.append(Point(-3, 0, self.DOT_MEDIUM))
+                self.pins.append(Point(3, 0, self.DOT_MEDIUM))
+                if self.value == "22X16":
+                    self.pins.append(Point(-4.5, 0, self.DOT_BIG))
+                    self.pins.append(Point(4.5, 0, self.DOT_BIG))
+                self.angle += 180
+                if self.angle >= 360:
+                    self.angle -= 360
+            if self.pattern_name == "LEDD":
+                self.pins.append(Point(-1, 0, self.DOT_SMALL))
+                self.pins.append(Point(1, 0, self.DOT_SMALL))
+                if self.angle > 90:
+                    self.angle -= 180
+            if self.pattern_name == "SOT-23":
+                self.pins.append(Point(-2.47 / 2, -1.80 / 2, self.DOT_SMALL))
+                self.pins.append(Point(2.47 / 2, -1.80 / 2, self.DOT_SMALL))
+                self.pins.append(Point(0, 2.47 / 2, self.DOT_SMALL))
+            if self.pattern_name == "SOD80_S":
+                self.pins.append(Point(-2.2, 0, self.DOT_BIG))
+                self.pins.append(Point(-1.20, 0, self.DOT_MEDIUM))
+                self.pins.append(Point(1.60, 0, self.DOT_MEDIUM))
+                self.pins.append(Point(2.5, 0, self.DOT_BIG))
+            if self.pattern_name == "DB-1S":
+                self.pins.append(Point(4.20, -2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(4.20, 2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.20, -2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.20, 2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(5.40, -2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(5.40, 2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(-5.40, -2.70, self.DOT_MEDIUM))
+                self.pins.append(Point(-5.40, 2.70, self.DOT_MEDIUM))
+            if self.pattern_name == "MB8S":
+                self.pins.append(Point(3, -1.20, self.DOT_BIG))
+                self.pins.append(Point(3, 1.20, self.DOT_BIG))
+                self.pins.append(Point(-3, -1.20, self.DOT_BIG))
+                self.pins.append(Point(-3, 1.20, self.DOT_BIG))
+            if self.pattern_name == "K1010":
+                self.pins.append(Point(4, -1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(4, 1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(4.5, -1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(4.5, 1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(-4, -1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(-4, 1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.5, -1.25, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.5, 1.25, self.DOT_MEDIUM))
+            if self.pattern_name == "DIP4":
+                self.pins.append(Point(4.20, -1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(4.20, 1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.20, -1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-4.20, 1.2, self.DOT_MEDIUM))
+            if self.pattern_name == "SM-6":
+                self.pins.append(Point(4.62, -2.36, self.DOT_BIG))
+                self.pins.append(Point(4.62, 2.36, self.DOT_BIG))
+                self.pins.append(Point(-4.64, -0.17, self.DOT_BIG))
+                self.pins.append(Point(-4.64, 2.36, self.DOT_BIG))
+            if self.pattern_name == "SO8":
+                self.pins.append(Point(-3.1, 1.90, self.DOT_SMALL))
+                self.pins.append(Point(-3.1, 0.63, self.DOT_SMALL))
+                self.pins.append(Point(-3.1, -0.63, self.DOT_SMALL))
+                self.pins.append(Point(-3.1, -1.90, self.DOT_SMALL))
+                self.pins.append(Point(3.1, 1.90, self.DOT_SMALL))
+                self.pins.append(Point(3.1, 0.63, self.DOT_SMALL))
+                self.pins.append(Point(3.1, -0.63, self.DOT_SMALL))
+                self.pins.append(Point(3.1, -1.90, self.DOT_SMALL))
+            if self.pattern_name == "TSSOP_20":
+                self.pins.append(Point(-2.8, 3.10, self.DOT_SMALL))
+                self.pins.append(Point(-2.8, -3.10, self.DOT_SMALL))
+                self.pins.append(Point(2.8, 3.10, self.DOT_SMALL))
+                self.pins.append(Point(2.8, -3.10, self.DOT_SMALL))
+            if self.pattern_name == "SOT-223":
+                self.pins.append(Point(-2.3, -3, self.DOT_MEDIUM))
+                self.pins.append(Point(0, -3, self.DOT_MEDIUM))
+                self.pins.append(Point(2.3, -3, self.DOT_MEDIUM))
+                self.pins.append(Point(0, 3, self.DOT_MEDIUM))
+            if self.pattern_name == "64A":  # lNog=12.4, half=6.2; lCorp=15.4, half=7.7
+                self.pins.append(Point(-5.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-3.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-1.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(1.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(3.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(5.2, -7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-5.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-3.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-1.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(1.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(3.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(5.2, 7.7, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, -5.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, -3.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, -1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, 1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, 3.2, self.DOT_MEDIUM))
+                self.pins.append(Point(-7.7, 5.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, -5.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, -3.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, -1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, 1.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, 3.2, self.DOT_MEDIUM))
+                self.pins.append(Point(7.7, 5.2, self.DOT_MEDIUM))
+            if self.pattern_name == "ATMEGA8":  # lNog=6.2, half=3.1; lCorp=9.2, half=4.6
+                self.pins.append(Point(-3.05, 4.6, self.DOT_SMALL))
+                self.pins.append(Point(-1.05, 4.6, self.DOT_SMALL))
+                self.pins.append(Point(1.05, 4.6, self.DOT_SMALL))
+                self.pins.append(Point(3.05, 4.6, self.DOT_SMALL))
+                self.pins.append(Point(-3.05, -4.6, self.DOT_SMALL))
+                self.pins.append(Point(-1.05, -4.6, self.DOT_SMALL))
+                self.pins.append(Point(1.05, -4.6, self.DOT_SMALL))
+                self.pins.append(Point(3.05, -4.6, self.DOT_SMALL))
+                self.pins.append(Point(4.6, -3.05, self.DOT_SMALL))
+                self.pins.append(Point(4.6, -1.05, self.DOT_SMALL))
+                self.pins.append(Point(4.6, 1.05, self.DOT_SMALL))
+                self.pins.append(Point(4.6, 3.05, self.DOT_SMALL))
+                self.pins.append(Point(-4.6, -3.05, self.DOT_SMALL))
+                self.pins.append(Point(-4.6, -1.05, self.DOT_SMALL))
+                self.pins.append(Point(-4.6, 1.05, self.DOT_SMALL))
+                self.pins.append(Point(-4.6, 3.05, self.DOT_SMALL))
+
+    def __init__(self, center, angle, description, comp_type, pattern_name, value):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # if(self.value.find("MOC") >= 0):
-        #    self.value = ""
-        # self.description = self.value
-        self.error = True
+        self.center = center
+        self.angle = 90 + angle
+        self.description = description
+        self.type = comp_type
+        self.pattern_name = pattern_name
+        self.value = value
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.real_angle = angle
+        self.center.x = self.center.x * xCoef
+        self.center.y = self.center.y * yCoef
+        self.skip = 0
         self.stack = 0
         self.height = 0.5
+        self.error = True
+        self.onlyPaste = False
         self.sizeType = Smd.get_size_type(self.pattern_name)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.correct_values()
+        self.correct_angles(angle)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         for st in stacks:
             st_value = st.value
@@ -269,148 +404,7 @@ class Component:
 
         if not self.error:
             self.pins = []
-            if self.pattern_name == "0805":
-                self.pins.append(Point(-2.21 / 2, 0, DOT_SMALL))
-                self.pins.append(Point(2.21 / 2, 0, DOT_SMALL))
-                if self.angle > 90:
-                    self.angle -= 180
-            if self.pattern_name == "1206":
-                self.pins.append(Point(-3.25 / 2, 0, DOT_MEDIUM))
-                self.pins.append(Point(3.25 / 2, 0, DOT_MEDIUM))
-                if self.angle > 90:
-                    self.angle -= 180
-            if self.pattern_name == "2512":
-                self.pins.append(Point(-3, 0, DOT_BIG))
-                self.pins.append(Point(3, 0, DOT_BIG))
-                self.pins.append(Point(-3, 1, DOT_BIG))
-                self.pins.append(Point(3, 1, DOT_BIG))
-                self.pins.append(Point(-3, -1, DOT_BIG))
-                self.pins.append(Point(3, -1, DOT_BIG))
-                if self.angle > 90:
-                    self.angle -= 180
-            if (ignoreRotation and (self.angle <= 90)) or not ignoreRotation:
-                if (self.pattern_name == "SOD323") or (self.pattern_name == "LED_0805"):
-                    self.pins.append(Point(-2.21 / 2, 0, DOT_SMALL))
-                    self.pins.append(Point(2.21 / 2, 0, DOT_SMALL))
-                if self.pattern_name == "10X16":
-                    self.pins.append(Point(-1.7, 0, DOT_MEDIUM))
-                    self.pins.append(Point(1.7, 0, DOT_MEDIUM))
-                    self.pins.append(Point(-3, 0, DOT_MEDIUM))
-                    self.pins.append(Point(3, 0, DOT_MEDIUM))
-                    if self.value == "22X16":
-                        self.pins.append(Point(-4.5, 0, DOT_BIG))
-                        self.pins.append(Point(4.5, 0, DOT_BIG))
-                    self.angle += 180
-                    if self.angle >= 360:
-                        self.angle -= 360
-                if self.pattern_name == "LEDD":
-                    self.pins.append(Point(-1, 0, DOT_SMALL))
-                    self.pins.append(Point(1, 0, DOT_SMALL))
-                    if self.angle > 90:
-                        self.angle -= 180
-                if self.pattern_name == "SOT-23":
-                    self.pins.append(Point(-2.47 / 2, -1.80 / 2, DOT_SMALL))
-                    self.pins.append(Point(2.47 / 2, -1.80 / 2, DOT_SMALL))
-                    self.pins.append(Point(0, 2.47 / 2, DOT_SMALL))
-                if self.pattern_name == "SOD80_S":
-                    self.pins.append(Point(-2.2, 0, DOT_BIG))
-                    self.pins.append(Point(-1.20, 0, DOT_MEDIUM))
-                    self.pins.append(Point(1.60, 0, DOT_MEDIUM))
-                    self.pins.append(Point(2.5, 0, DOT_BIG))
-                if self.pattern_name == "DB-1S":
-                    self.pins.append(Point(4.20, -2.70, DOT_MEDIUM))
-                    self.pins.append(Point(4.20, 2.70, DOT_MEDIUM))
-                    self.pins.append(Point(-4.20, -2.70, DOT_MEDIUM))
-                    self.pins.append(Point(-4.20, 2.70, DOT_MEDIUM))
-                    self.pins.append(Point(5.40, -2.70, DOT_MEDIUM))
-                    self.pins.append(Point(5.40, 2.70, DOT_MEDIUM))
-                    self.pins.append(Point(-5.40, -2.70, DOT_MEDIUM))
-                    self.pins.append(Point(-5.40, 2.70, DOT_MEDIUM))
-                if self.pattern_name == "MB8S":
-                    self.pins.append(Point(3, -1.20, DOT_BIG))
-                    self.pins.append(Point(3, 1.20, DOT_BIG))
-                    self.pins.append(Point(-3, -1.20, DOT_BIG))
-                    self.pins.append(Point(-3, 1.20, DOT_BIG))
-                if self.pattern_name == "K1010":
-                    self.pins.append(Point(4, -1.25, DOT_MEDIUM))
-                    self.pins.append(Point(4, 1.25, DOT_MEDIUM))
-                    self.pins.append(Point(4.5, -1.25, DOT_MEDIUM))
-                    self.pins.append(Point(4.5, 1.25, DOT_MEDIUM))
-                    self.pins.append(Point(-4, -1.25, DOT_MEDIUM))
-                    self.pins.append(Point(-4, 1.25, DOT_MEDIUM))
-                    self.pins.append(Point(-4.5, -1.25, DOT_MEDIUM))
-                    self.pins.append(Point(-4.5, 1.25, DOT_MEDIUM))
-                if self.pattern_name == "DIP4":
-                    self.pins.append(Point(4.20, -1.2, DOT_MEDIUM))
-                    self.pins.append(Point(4.20, 1.2, DOT_MEDIUM))
-                    self.pins.append(Point(-4.20, -1.2, DOT_MEDIUM))
-                    self.pins.append(Point(-4.20, 1.2, DOT_MEDIUM))
-                if self.pattern_name == "SM-6":
-                    self.pins.append(Point(4.62, -2.36, DOT_BIG))
-                    self.pins.append(Point(4.62, 2.36, DOT_BIG))
-                    self.pins.append(Point(-4.64, -0.17, DOT_BIG))
-                    self.pins.append(Point(-4.64, 2.36, DOT_BIG))
-                if self.pattern_name == "SO8":
-                    self.pins.append(Point(-3.1, 1.90, DOT_SMALL))
-                    self.pins.append(Point(-3.1, 0.63, DOT_SMALL))
-                    self.pins.append(Point(-3.1, -0.63, DOT_SMALL))
-                    self.pins.append(Point(-3.1, -1.90, DOT_SMALL))
-                    self.pins.append(Point(3.1, 1.90, DOT_SMALL))
-                    self.pins.append(Point(3.1, 0.63, DOT_SMALL))
-                    self.pins.append(Point(3.1, -0.63, DOT_SMALL))
-                    self.pins.append(Point(3.1, -1.90, DOT_SMALL))
-                if self.pattern_name == "TSSOP_20":
-                    self.pins.append(Point(-2.8, 3.10, DOT_SMALL))
-                    self.pins.append(Point(-2.8, -3.10, DOT_SMALL))
-                    self.pins.append(Point(2.8, 3.10, DOT_SMALL))
-                    self.pins.append(Point(2.8, -3.10, DOT_SMALL))
-                if self.pattern_name == "SOT-223":
-                    self.pins.append(Point(-2.3, -3, DOT_MEDIUM))
-                    self.pins.append(Point(0, -3, DOT_MEDIUM))
-                    self.pins.append(Point(2.3, -3, DOT_MEDIUM))
-                    self.pins.append(Point(0, 3, DOT_MEDIUM))
-                if self.pattern_name == "64A":  # lNog=12.4, half=6.2; lCorp=15.4, half=7.7
-                    self.pins.append(Point(-5.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-3.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-1.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(1.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(3.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(5.2, -7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-5.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-3.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-1.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(1.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(3.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(5.2, 7.7, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, -5.2, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, -3.2, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, -1.2, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, 1.2, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, 3.2, DOT_MEDIUM))
-                    self.pins.append(Point(-7.7, 5.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, -5.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, -3.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, -1.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, 1.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, 3.2, DOT_MEDIUM))
-                    self.pins.append(Point(7.7, 5.2, DOT_MEDIUM))
-                if self.pattern_name == "ATMEGA8":  # lNog=6.2, half=3.1; lCorp=9.2, half=4.6
-                    self.pins.append(Point(-3.05, 4.6, DOT_SMALL))
-                    self.pins.append(Point(-1.05, 4.6, DOT_SMALL))
-                    self.pins.append(Point(1.05, 4.6, DOT_SMALL))
-                    self.pins.append(Point(3.05, 4.6, DOT_SMALL))
-                    self.pins.append(Point(-3.05, -4.6, DOT_SMALL))
-                    self.pins.append(Point(-1.05, -4.6, DOT_SMALL))
-                    self.pins.append(Point(1.05, -4.6, DOT_SMALL))
-                    self.pins.append(Point(3.05, -4.6, DOT_SMALL))
-                    self.pins.append(Point(4.6, -3.05, DOT_SMALL))
-                    self.pins.append(Point(4.6, -1.05, DOT_SMALL))
-                    self.pins.append(Point(4.6, 1.05, DOT_SMALL))
-                    self.pins.append(Point(4.6, 3.05, DOT_SMALL))
-                    self.pins.append(Point(-4.6, -3.05, DOT_SMALL))
-                    self.pins.append(Point(-4.6, -1.05, DOT_SMALL))
-                    self.pins.append(Point(-4.6, 1.05, DOT_SMALL))
-                    self.pins.append(Point(-4.6, 3.05, DOT_SMALL))
+            self.fill_dots()
 
             if self.angle < 0:
                 self.angle += 360
@@ -418,20 +412,29 @@ class Component:
                 self.error = True
             else:
                 for pin in self.pins:
-                    xz = self.center.x + pin.x * math.cos(real_angle * PI / 180) - \
-                         pin.y * math.sin(real_angle * PI / 180)
-                    yz = self.center.y + pin.x * math.sin(real_angle * PI / 180) + \
-                         pin.y * math.cos(real_angle * PI / 180)
+                    xz = self.center.x + pin.x * math.cos(self.real_angle * PI / 180) - \
+                         pin.y * math.sin(self.real_angle * PI / 180)
+                    yz = self.center.y + pin.x * math.sin(self.real_angle * PI / 180) + \
+                         pin.y * math.cos(self.real_angle * PI / 180)
                     pin.x = xz
                     pin.y = yz
 
 
-# Глобальные настройки
-Window.size = (1400, 700)
-Window.top = 100
-Window.left = 100
-Window.clear_color = (255 / 255, 186 / 255, 3 / 255, 1)
-Window.title = "Solder Paste"
+def input_pcad():
+    file_input = path_to_folder + "Input.txt"
+    file_out = open(file_input, 'w')
+    input_text = Gui_Automizer.pcad_reports()
+    # input_text = pyperclip.paste()
+    input_text = input_text.replace('\n', '')
+    print(input_text)
+    file_out.write(input_text)
+    file_out.close()
+
+
+def call_file_picker():
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.askopenfilename(filetypes=[("Correct file", ".csv")])
 
 
 class Container(BoxLayout):
@@ -453,25 +456,13 @@ class Container(BoxLayout):
         self.ll_out.text += text + end
         pass
 
-    def input_pcad(self):
-        file_input = path_to_folder + "Input.txt"
-        file_out = open(file_input, 'w')
-        input_text = Gui_Automizer.pcad_reports()
-        # input_text = pyperclip.paste()
-        input_text = input_text.replace('\n', '')
-        print(input_text)
-        file_out.write(input_text)
-        file_out.close()
-
     def correct_coords(self):
         point = path_to_folder.rfind("\\")
         this_directory = path_to_folder[:point]
         point = this_directory.rfind("\\")
         this_directory = path_to_folder[:point]
         error = False
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilename(filetypes=[("Correct file", ".csv")])
+        file_path = call_file_picker()
         point = file_path.rfind("/") + 1
         input_file_name = file_path[point:]
         input_file_name = input_file_name.replace(".csv", "")
@@ -702,13 +693,6 @@ class Container(BoxLayout):
                 file_out.write("0")
                 file_out.write(",")
                 file_out.write("0")
-                #    file_out.write(str(size_x))
-                #    file_out.write(",")
-                #    file_out.write(str(size_y))
-                #    file_out.write(",")
-                #    file_out.write(str(devices_number_x))
-                #    file_out.write(",")
-                #    file_out.write(str(devices_number_y))
                 file_out.write("\n\n")
                 # ---------------------- List of stacks ----------------------
                 # c1cfd5bbc6abd2c6
@@ -1172,7 +1156,8 @@ class Container(BoxLayout):
                 self.print_custom("-------------------------------")
 
                 # --------------------------------------------------------------
-                file_input_name = path_to_folderOutput + device_name + "input" + str(size_x) + "x" + str(size_y) + ".txt"
+                file_input_name = path_to_folderOutput + device_name + "input" + str(size_x) + "x" + str(
+                    size_y) + ".txt"
                 file_input = path_to_folder + "input.txt"
                 shutil.copy(file_input, file_input_name)
                 # --------------------------------------------------------------
@@ -1263,145 +1248,11 @@ class Container(BoxLayout):
             # ***********************************************************************
 
 
-class DisplayApp(App):
-
-    # Создание всех виджетов (объектов)
-    def __init__(self):
-        super().__init__()
-
-    def kek(self):
-        print('ok')
-
-    def on_start(self):
-        global device_name
-        global size_x
-        global size_y
-        global split_size_type
-        global devices_number_x
-        global devices_number_y
-        global show_plot
-        global copy_to_sd_chmt
-        global copy_to_sd_dispenser
-        global path_to_folder
-        global path_to_folderOutput
-        global coils
-
-        bl_kat_l = BoxLayout()
-        bl_kat_l.orientation = "vertical"
-        bl_kat_r = BoxLayout()
-        bl_kat_r.orientation = "vertical"
-        for kat in range(KOLVO_KATUSHEK):
-            num = KOLVO_KATUSHEK - kat - 1
-            bl_kat = BoxLayout()
-            bl_kat.orientation = "horizontal"
-            text_str = "№" + str(num + 1)
-            if kat < KOLVO_LOTKOV:
-                text_str = text_str + "(" + str(3 - kat) + ")"
-            kat_label = Label(text=text_str)
-            kat_text_input = TextInput(hint_text="1")
-            kat_text_input.id = "kat" + str(num + 1)
-            self.root.ids[kat_text_input.id] = kat_text_input
-            kat_text_input.size_hint = (2, 1)
-            kat_text_input.background_color = (1, 1, 0, 1)
-            cb_enable = CheckBox(active=True)
-            cb_enable.id = "enKat" + str(num + 1)
-            cb_enable.color = (1, 0, 1, 1)
-            bl_kat.add_widget(kat_label)
-            # bl_kat.add_widget(cb_enable)
-            bl_kat.add_widget(kat_text_input)
-            if num % 2:
-                bl_kat_r.add_widget(bl_kat)
-            else:
-                bl_kat_l.add_widget(bl_kat)
-        kat_text_input = TextInput(hint_text="1")
-        kat_text_input.id = "kat"
-        self.root.bl_coils.orientation = "horizontal"
-        self.root.bl_coils.add_widget(bl_kat_l)
-        self.root.bl_coils.add_widget(bl_kat_r)
-
-        last_slash = path_to_folder.rfind("\\")
-        path_to_folder = path_to_folder[:last_slash + 1]
-        path_to_folderOutput = path_to_folder[:-1]
-        last_slash = path_to_folderOutput.rfind("\\")
-        path_to_folderOutput = path_to_folder[:last_slash + 1]
-        # Read
-        path_to_file = path_to_folder + "optionsSP.txt"
-        file_options = open(path_to_file, 'r')
-        # Шаблон: х) параметр
-        prev_i = 0
-        file_options_lines = file_options.readlines()
-        for strInput in file_options_lines:
-            if strInput[0] == NUMBER_NAME:
-                device_name = strInput[3:-1]
-            if strInput[0] == NUMBER_RAZMER_X:
-                size_x = float(strInput[3:-1])
-            if strInput[0] == NUMBER_RAZMER_Y:
-                size_y = float(strInput[3:-1])
-            if strInput[0] == NUMBER_KOLVO_X:
-                devices_number_x = int(strInput[3:-1])
-            if strInput[0] == NUMBER_KOLVO_Y:
-                devices_number_y = int(strInput[3:-1])
-            if strInput[0] == NUMBER_SPLIT_SIZE:
-                if strInput.find("False") != -1:
-                    split_size_type = False
-                else:
-                    split_size_type = True
-            if strInput[0] == NUMBER_SHOW_PLOT:
-                if strInput.find("False") != -1:
-                    show_plot = False
-                else:
-                    show_plot = True
-            if strInput[0] == NUMBER_SD_CHMT:
-                if strInput.find("False") != -1:
-                    copy_to_sd_chmt = False
-                else:
-                    copy_to_sd_chmt = True
-            if strInput[0] == NUMBER_SD_dispenser:
-                if strInput.find("False") != -1:
-                    copy_to_sd_dispenser = False
-                else:
-                    copy_to_sd_dispenser = True
-            if strInput[0] == "k":
-                pos = strInput.find(")")
-                i = int(strInput[1:pos]) - 1
-                if i > prev_i + 1:
-                    j = prev_i + 1
-                    while j < i:
-                        smd_kat = Smd(j, " ", " ")
-                        stacks.append(smd_kat)
-                        j += 1
-                prev_i = i
-                coils[i] = strInput[pos + 2:-1]
-                param_kat = coils[i].split()
-                if len(param_kat) < 2:
-                    param_kat = [" ", " "]
-                smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
-                stacks.append(smd_kat)
-                self.root.ids[str("kat" + str(i + 1))].text = coils[i]
-        file_options.close()
-
-        self.root.ti_device_name.text = device_name
-        self.root.ti_size_x.text = str(size_x)
-        self.root.ti_size_y.text = str(size_y)
-        self.root.ti_devices_number_x.text = str(devices_number_x)
-        self.root.ti_devices_number_y.text = str(devices_number_y)
-        self.root.cb_chart.active = show_plot
-        self.root.cb_sd_chmt.active = copy_to_sd_chmt
-        self.root.cb_sd_dispenser.active = copy_to_sd_dispenser
-        self.root.cb_split_size.active = split_size_type
-
-        # print(self.root.ids)
-        # self.root.ll_out.text = "sads"
-
-    # Основной метод для построения программы
-    def build(self):
-        return Container()
-
-
 # ***********************************************************************
 # Запуск проекта
 if __name__ == "__main__":
     threadExit = Gui_Automizer.MyThread("exit")
     threadExit.start()
+    Gui_Kivy.init_window()
     DisplayApp().run()
 # ***********************************************************************
