@@ -1,3 +1,4 @@
+# ---------------------------------------------------------------
 import pyperclip
 from pynput.keyboard import Key, Listener
 import pyautogui
@@ -5,10 +6,12 @@ import win32con
 import win32api
 import time
 from threading import Thread
-from Solder_Paste import qPoint
+from Solder_Paste import Point
 import os
+# ---------------------------------------------------------------
 
 
+# ---------------------------------------------------------------
 class MyThread(Thread):
     def __init__(self, name):
         Thread.__init__(self)
@@ -28,6 +31,7 @@ class MyThread(Thread):
         pass
 
 
+# ---------------------------------------------------------------
 def move(coords, delay=0.01):
     x = coords.x
     y = coords.y
@@ -107,6 +111,7 @@ def press_keys(key1, key2, delay=0.01):
         time.sleep(delay)
 
 
+# ---------------------------------------------------------------
 def pcad_reports():
     press_keys('alt', 'tab', 0.8)
     press_key('alt', 0.2)
@@ -153,6 +158,7 @@ def pcad_reports():
     return text
 
 
+# ---------------------------------------------------------------
 def pcad_correct_coords(arr_coords):
     # numberComp = int(input("Количество компонентов в PCAD файле: "))
     pyautogui.keyDown('alt')
@@ -175,10 +181,10 @@ def pcad_correct_coords(arr_coords):
     prev_ref = "NONE"
     while not exit_flag:
         # for i in range(7):
-        click(qPoint(x=839, y=366 - 40))  # scroll up
+        click(Point(x=839, y=366 - 40))  # scroll up
         press_key('home', 0.1)
         time.sleep(0.1)
-        click(qPoint(x=882, y=366 - 40))  # select first ref
+        click(Point(x=882, y=366 - 40))  # select first ref
         time.sleep(0.1)
         pages = int(number / 15)  # 16 components in page
         for i in range(pages):
@@ -187,9 +193,9 @@ def pcad_correct_coords(arr_coords):
         for i in range(number_left):
             press_key('down', 0)
         time.sleep(0.1)
-        click(qPoint(x=1025, y=370 - 40), 0.6)  # properties
-        click(qPoint(x=848, y=361 - 40), 0.1)  # ref
-        click(qPoint(x=848, y=361 - 40), 0.2)  # ref
+        click(Point(x=1025, y=370 - 40), 0.6)  # properties
+        click(Point(x=848, y=361 - 40), 0.1)  # ref
+        click(Point(x=848, y=361 - 40), 0.2)  # ref
         press_keys('ctrl', 'c', 0.1)
         copied_ref = pyperclip.paste()
         print(number, copied_ref)
@@ -200,8 +206,8 @@ def pcad_correct_coords(arr_coords):
             for coords in arr_coords:
                 # print(coords[2])
                 if copied_ref == coords[2]:
-                    click(qPoint(x=1059, y=538), 0.05)  # x
-                    click(qPoint(x=1059, y=538), 0.1)  # x
+                    click(Point(x=1059, y=538), 0.05)  # x
+                    click(Point(x=1059, y=538), 0.1)  # x
                     press_keys('ctrl', 'x', 0.05)
                     copied_coord = pyperclip.paste()
                     x_new = round(float(copied_coord) + float(coords[0]), 3)
@@ -269,3 +275,6 @@ def pcad_correct_coords(arr_coords):
     press_keys('alt', 'tab')
     text = pyperclip.paste()
     return text
+
+
+# ---------------------------------------------------------------

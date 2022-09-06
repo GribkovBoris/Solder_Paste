@@ -13,70 +13,7 @@ from tkinter import filedialog
 # ==================================================================
 import Gui_Automizer
 import Gui_Kivy
-
-
-# ==================================================================
-
-class qPoint():
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __add__(self, other):
-        return qPoint(self.x + other.x, self.y + other.y)
-
-
-# ***********************************************************************
-ignoreRotation = False
-useOnlyOneHead = False
-# ***********************************************************************
-NUMBER_NAME = "1"
-NUMBER_RAZMER_X = "2"
-NUMBER_RAZMER_Y = "3"
-NUMBER_KOLVO_X = "4"
-NUMBER_KOLVO_Y = "5"
-NUMBER_SHOW_PLOT = "6"
-NUMBER_SD_CHMT = "7"
-NUMBER_SD_dispenser = "8"
-NUMBER_SPLIT_SIZE = "9"
-file_sd = "E:/"
-allowConvert = 0
-ignoreCoeff = 0
-stack_error = 0
-coordCoef = 0.801
-xCoef = 1.0
-yCoef = 1.0
-size_type_small = True
-chmtXCoef = 1.0
-chmtYCoef = 1.0
-PI = 3.14159265
-LINE_START = 8
-LINE_END = 9
-# ***********************************************************************
-DRIVE_REMOVABLE = 2
-# ***********************************************************************
-
-# ***********************************************************************
-device_name = "test"
-size_x = 1
-size_y = 1
-devices_number_x = 1
-devices_number_y = 1
-split_size_type = False
-show_plot = False
-copy_to_sd_chmt = False
-copy_to_sd_dispenser = False
-KOLVO_KATUSHEK = 32
-KOLVO_LOTKOV = 3
-coils = [" "] * KOLVO_KATUSHEK
-path_to_folder = os.path.abspath(__file__)
-path_to_folderOutput = path_to_folder
-FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
-SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
-                b'\xd7\xa2\xca\xcd '
-THIRD_STRING = b'%,\xc6\xb4\xb0\xe51,X,Y,'
-FOURTH_STRING = b'%,\xcc\xf9\xcd\xb7\xba\xc5,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xc7\xb6\xc8,\xb8\xdf\xb6\xc8,' \
-                b'\xcc\xf8\xb9\xfd,\xcb\xd9\xb6\xc8,\xcb\xb5\xc3\xf7,\xd7\xa2\xca\xcd '
+import Smd_Class
 
 
 # ***********************************************************************
@@ -86,65 +23,58 @@ class Point:
         self.y = y
         self.line = line
 
-
 # ***********************************************************************
-class Smd:
-    smdParams = {
-        # Pattern     height xOff yOff Feed Size
-        "DIP4": [3.6, 0, 0, 12, 1],
-        "TSSOP_20": [1.5, -9.55, 6.89, 12, 2],
-        "LEDD": [0.78, 0.16, 0, 4, 0],
-        "10X16": [3.6, 0, 0, 4, 1],
-        "0805": [0.5, 0.7, 0, 4, 0],
-        "1206": [0.5, 0.6, 0, 4, 0],
-        "2512": [0.5, 0.6, 0, 4, 1],
-        "SOD80_S": [1.5, 0.66, 0.16, 4, 0],  # BZV55C
-        "SOT-23": [0.5, 0.75, 0.3, 4, 0],  # BAS40-06
-        "SOT-223": [1.5, -9.2, 7.15, 4, 0],  # BAS40-06
-        "DB-1S": [2.4, 0.22, -0.2, 12, 2],  # DB107S
-        "K1010": [2.4, 0, 0, 8, 1],  # K1010
-        "SM-6": [3.6, 8.07, -0.15, 12, 2],  # MOC3063
-        "SO8": [1.5, 0.66, -0.28, 8, 1],  # PIC12F675
-        "64A": [1.5, -4.7, 2.5, 4, 2],  # 64A
-        "ATMEGA8": [1.5, -4.7, 2.5, 4, 2],  # ATMEGA8
-        "SOD323": [0.5, 0.7, 0, 4, 0],
-        "LED_0805": [0.5, 0.7, 0, 4, 0],
-        "MB8S": [2.4, 0.7, 0, 8, 1]
-
-    }
-
-    @staticmethod
-    def get_height(pattern_name):
-        return Smd.smdParams[pattern_name][0]
-
-    @staticmethod
-    def get_x_offset(pattern_name):
-        return Smd.smdParams[pattern_name][1]
-
-    @staticmethod
-    def get_y_offset(pattern_name):
-        return Smd.smdParams[pattern_name][2]
-
-    @staticmethod
-    def get_feed_rate(pattern_name):
-        return Smd.smdParams[pattern_name][3]
-
-    @staticmethod
-    def get_size_type(pattern_name):
-        return Smd.smdParams[pattern_name][4]
-
-    def __init__(self, number, pattern_name, value):
-        self.number = number
-        self.value = value
-        self.pattern_name = pattern_name
-        try:
-            self.height = self.get_height(pattern_name)
-        except:
-            self.height = 0
-
+ignore_rotation = False
+use_only_one_head = False
+# ***********************************************************************
+NUMBER_NAME = "1"
+NUMBER_SIZE_X = "2"
+NUMBER_SIZE_Y = "3"
+NUMBER_NUMBER_X = "4"
+NUMBER_NUMBER_Y = "5"
+NUMBER_SHOW_PLOT = "6"
+NUMBER_SD_CHMT = "7"
+NUMBER_SD_DISPENSER = "8"
+NUMBER_SPLIT_SIZE = "9"
+# ***********************************************************************
+DRIVE_REMOVABLE = 2
+NUMBER_COILS = 32
+NUMBER_TRAYS = 3
+# ***********************************************************************
+file_sd = "E:/"
+allow_convert = 0
+ignore_coef = 0
+stack_error = 0
+coord_coef = 0.801
+x_coef = 1.0
+y_coef = 1.0
+size_type_small = True
+chmtx_coef = 1.0
+chmty_coef = 1.0
+PI = 3.14159265
+# ***********************************************************************
 
 # ***********************************************************************
 stacks = []
+device_name = "test"
+size_x = 1
+size_y = 1
+devices_number_x = 1
+devices_number_y = 1
+split_size_type = False
+show_plot = False
+copy_to_sd_chmt = False
+copy_to_sd_dispenser = False
+coils = [" "] * NUMBER_COILS
+path_to_folder = os.path.abspath(__file__)
+path_to_folder_output = path_to_folder
+# ***********************************************************************
+FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
+SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
+                b'\xd7\xa2\xca\xcd '
+THIRD_STRING = b'%,\xc6\xb4\xb0\xe51,X,Y,'
+FOURTH_STRING = b'%,\xcc\xf9\xcd\xb7\xba\xc5,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xc7\xb6\xc8,\xb8\xdf\xb6\xc8,' \
+                b'\xcc\xf8\xb9\xfd,\xcb\xd9\xb6\xc8,\xcb\xb5\xc3\xf7,\xd7\xa2\xca\xcd '
 
 
 # ***********************************************************************
@@ -152,6 +82,8 @@ class Component:
     DOT_SMALL = 1
     DOT_MEDIUM = 2
     DOT_BIG = 3
+    LINE_START = 8
+    LINE_END = 9
 
     def correct_angles(self, angle):
         if self.pattern_name == "SM-6":
@@ -240,7 +172,7 @@ class Component:
             self.pins.append(Point(3, -1, self.DOT_BIG))
             if self.angle > 90:
                 self.angle -= 180
-        if (ignoreRotation and (self.angle <= 90)) or not ignoreRotation:
+        if (ignore_rotation and (self.angle <= 90)) or not ignore_rotation:
             if (self.pattern_name == "SOD323") or (self.pattern_name == "LED_0805"):
                 self.pins.append(Point(-2.21 / 2, 0, self.DOT_SMALL))
                 self.pins.append(Point(2.21 / 2, 0, self.DOT_SMALL))
@@ -367,15 +299,13 @@ class Component:
     def __init__(self, center, angle, description, comp_type, pattern_name, value):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.center = center
+        self.real_angle = angle
         self.angle = 90 + angle
         self.description = description
         self.type = comp_type
         self.pattern_name = pattern_name
         self.value = value
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.real_angle = angle
-        self.center.x = self.center.x * xCoef
-        self.center.y = self.center.y * yCoef
         self.skip = 0
         self.stack = 0
         self.height = 0.5
@@ -395,8 +325,7 @@ class Component:
                 self.onlyPaste = True
                 self.skip = 1
                 st_value = st_value.replace("*", "")
-            if self.pattern_name == st.pattern_name and st.number != 0 and self.value == st_value:  # or\
-                # ((self.type != "R1206") & (self.type != "R0805") & (self.type != "C0805")):
+            if self.pattern_name == st.pattern_name and st.number != 0 and self.value == st_value:
                 self.stack = st.number
                 self.height = st.height
                 self.error = False
@@ -650,7 +579,7 @@ class Container(BoxLayout):
             if devices_number_y == 0:
                 devices_number_y = 1
             # print(self.ids)
-            for kat in range(KOLVO_KATUSHEK):
+            for kat in range(NUMBER_COILS):
                 coils[kat] = self.ids[str("kat" + str(kat + 1))].text
                 coil = coils[kat].split()
                 if len(coil) == 2:
@@ -679,7 +608,7 @@ class Container(BoxLayout):
                         mark_file = "b"
                 else:
                     mark_file = ""
-                file_chmt_name = path_to_folderOutput + device_name + mark_file + ".csv"
+                file_chmt_name = path_to_folder_output + device_name + mark_file + ".csv"
                 file_out = open(file_chmt_name, 'w')
                 # ---------------------- Origin offset ----------------------
                 file_out.close()
@@ -1002,9 +931,9 @@ class Container(BoxLayout):
                     if not split_size_type:
                         shutil.copy(file_chmt_name, file_sd)
                     else:
-                        file_chmt_name = path_to_folderOutput + device_name + "s" + ".csv"
+                        file_chmt_name = path_to_folder_output + device_name + "s" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
-                        file_chmt_name = path_to_folderOutput + device_name + "b" + ".csv"
+                        file_chmt_name = path_to_folder_output + device_name + "b" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
                 if len(drives_rem) == 0:
                     ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
@@ -1112,7 +1041,7 @@ class Container(BoxLayout):
 
                 coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
                 # --------------------------------------------------------------
-                file_name_control = path_to_folderOutput + device_name + "t.nc"
+                file_name_control = path_to_folder_output + device_name + "t.nc"
                 file_out_control = open(file_name_control, 'w')
                 file_out_control.write(";start control\n")
                 file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
@@ -1124,7 +1053,7 @@ class Container(BoxLayout):
                 file_out_control.write(";m2")
                 file_out_control.close()
                 # --------------------------------------------------------------
-                file_name_main = path_to_folderOutput + device_name + ".nc"
+                file_name_main = path_to_folder_output + device_name + ".nc"
                 file_code = open(file_name_main, 'w')
                 # --------------------------------------------------------------
                 file_code.write(";start\n")
@@ -1144,7 +1073,7 @@ class Container(BoxLayout):
                 file_code.write(";m2")
                 file_code.close()
                 # --------------------------------------------------------------
-                file_name = path_to_folderOutput + device_name + "x.nc"
+                file_name = path_to_folder_output + device_name + "x.nc"
                 file_code = open(file_name, 'w')
                 # --------------------------------------------------------------
                 file_code.write(";start control\n")
@@ -1160,7 +1089,7 @@ class Container(BoxLayout):
                 self.print_custom("-------------------------------")
 
                 # --------------------------------------------------------------
-                file_input_name = path_to_folderOutput + device_name + "input" + str(size_x) + "x" + str(
+                file_input_name = path_to_folder_output + device_name + "input" + str(size_x) + "x" + str(
                     size_y) + ".txt"
                 file_input = path_to_folder + "input.txt"
                 shutil.copy(file_input, file_input_name)
@@ -1234,14 +1163,14 @@ class Container(BoxLayout):
                     plt.ioff()
                     plt.show()
 
-            file_options_lines = [NUMBER_NAME + ") " + str(device_name), NUMBER_RAZMER_X + ") " + str(size_x),
-                                  NUMBER_RAZMER_Y + ") " + str(size_y), NUMBER_KOLVO_X + ") " + str(devices_number_x),
-                                  NUMBER_KOLVO_Y + ") " + str(devices_number_y),
+            file_options_lines = [NUMBER_NAME + ") " + str(device_name), NUMBER_SIZE_X + ") " + str(size_x),
+                                  NUMBER_SIZE_Y + ") " + str(size_y), NUMBER_NUMBER_X + ") " + str(devices_number_x),
+                                  NUMBER_NUMBER_Y + ") " + str(devices_number_y),
                                   NUMBER_SHOW_PLOT + ") " + str(show_plot),
                                   NUMBER_SD_CHMT + ") " + str(copy_to_sd_chmt),
-                                  NUMBER_SD_dispenser + ") " + str(copy_to_sd_dispenser),
+                                  NUMBER_SD_DISPENSER + ") " + str(copy_to_sd_dispenser),
                                   NUMBER_SPLIT_SIZE + ") " + str(split_size_type)]
-            for kat in range(KOLVO_KATUSHEK):
+            for kat in range(NUMBER_COILS):
                 file_options_lines.append("k" + str(kat + 1) + ") " + coils[kat])
 
             file_options = open(path_to_folder + "optionsSP.txt", 'w')
