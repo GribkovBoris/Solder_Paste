@@ -12,9 +12,12 @@ from kivy.properties import ObjectProperty
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
-
-
 # ==================================================================
+from Solder_Paste import PcadConverter
+from Smd_Class import Smd
+# ==================================================================
+
+
 def init_window():
     # Глобальные настройки
     Window.size = (1400, 700)
@@ -23,39 +26,123 @@ def init_window():
     Window.clear_color = (255 / 255, 186 / 255, 3 / 255, 1)
     Window.title = "Solder Paste"
 
+
+class Container(BoxLayout):
+    ti_size_x = ObjectProperty()
+    ti_size_y = ObjectProperty()
+    ti_devices_number_x = ObjectProperty()
+    ti_devices_number_y = ObjectProperty()
+    ti_device_name = ObjectProperty()
+    cb_chart = ObjectProperty()
+    cb_sd_chmt = ObjectProperty()
+    cb_sd_dispenser = ObjectProperty()
+    bl_coils = ObjectProperty()
+    ll_out = ObjectProperty()
+    b_input_pcad = ObjectProperty()
+    cb_split_size = ObjectProperty()
+    b_input_saved = ObjectProperty()
+
+    NUMBER_COILS = 32
+    NUMBER_TRAYS = 3
+
+    stacks = []
+    device_name = "test"
+    size_x = 1
+    size_y = 1
+    devices_number_x = 1
+    devices_number_y = 1
+    split_size_type = False
+    show_plot = False
+    copy_to_sd_chmt = False
+    copy_to_sd_dispenser = False
+    coils = [" "] * NUMBER_COILS
+
+    def get_number_coils(self):
+        return self.NUMBER_COILS
+
+    def get_number_trays(self):
+        return self.NUMBER_TRAYS
+
+    def print_custom(self, text, end="\n"):
+        self.ll_out.text += text + end
+        pass
+
+    def refresh_gui(self):
+        self.root.ti_device_name.text = self.device_name
+        self.root.ti_size_x.text = str(self.size_x)
+        self.root.ti_size_y.text = str(self.size_y)
+        self.root.ti_devices_number_x.text = str(self.devices_number_x)
+        self.root.ti_devices_number_y.text = str(self.devices_number_y)
+        self.root.cb_chart.active = self.show_plot
+        self.root.cb_sd_chmt.active = self.copy_to_sd_chmt
+        self.root.cb_sd_dispenser.active = self.copy_to_sd_dispenser
+        self.root.cb_split_size.active = self.split_size_type
+
+    def read_gui(self):
+        self.ll_out.text = ""
+        self.device_name = self.ti_device_name.text
+        self.size_x = float(self.ti_size_x.text)
+        self.size_y = float(self.ti_size_y.text)
+        self.devices_number_x = int(self.ti_devices_number_x.text)
+        self.devices_number_y = int(self.ti_devices_number_y.text)
+        if self.cb_chart.active:
+            self.show_plot = True
+        else:
+            self.show_plot = False
+        if self.cb_sd_chmt.active:
+            self.copy_to_sd_chmt = True
+        else:
+            self.copy_to_sd_chmt = False
+        if self.cb_sd_dispenser.active:
+            self.copy_to_sd_dispenser = True
+        else:
+            self.copy_to_sd_dispenser = False
+        if self.cb_split_size.active:
+            self.split_size_type = True
+        else:
+            self.split_size_type = False
+
+        if self.devices_number_x == 0:
+            self.devices_number_x = 1
+        if self.devices_number_y == 0:
+            self.devices_number_y = 1
+        # print(self.ids)
+        for kat in range(self.NUMBER_COILS):
+            self.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
+            coil = self.coils[kat].split()
+            if len(coil) == 2:
+                self.stacks[kat].value = coil[1]
+                self.stacks[kat].pattern_name = coil[0]
+                try:
+                    self.height = self.getHeight(self.stacks[kat].pattern_name)
+                except:
+                    self.height = 0
+
+    def raschet(self):
+        self.print_custom("\n")
+        self.read_gui()
+        PcadConverter.convert_pcad_to_files()
+
+
 class DisplayApp(App):
 
     # Создание всех виджетов (объектов)
     def __init__(self):
         super().__init__()
 
-    def kek(self):
-        print('ok')
-
     def on_start(self):
-        global device_name
-        global size_x
-        global size_y
-        global split_size_type
-        global devices_number_x
-        global devices_number_y
-        global show_plot
-        global copy_to_sd_chmt
-        global copy_to_sd_dispenser
-        global path_to_folder
-        global path_to_folderOutput
-        global coils
-
         bl_kat_l = BoxLayout()
         bl_kat_l.orientation = "vertical"
         bl_kat_r = BoxLayout()
         bl_kat_r.orientation = "vertical"
-        for kat in range(KOLVO_KATUSHEK):
-            num = KOLVO_KATUSHEK - kat - 1
+        number_coils = Container.get_number_coils()
+        number_trays = Container.get_number_coils()
+        for kat in range(number_coils):
+            num = number_coils - kat - 1
             bl_kat = BoxLayout()
             bl_kat.orientation = "horizontal"
             text_str = "№" + str(num + 1)
-            if kat < KOLVO_LOTKOV:
+            if kat < number_trays:
                 text_str = text_str + "(" + str(3 - kat) + ")"
             kat_label = Label(text=text_str)
             kat_text_input = TextInput(hint_text="1")
@@ -79,79 +166,9 @@ class DisplayApp(App):
         self.root.bl_coils.add_widget(bl_kat_l)
         self.root.bl_coils.add_widget(bl_kat_r)
 
-        last_slash = path_to_folder.rfind("\\")
-        path_to_folder = path_to_folder[:last_slash + 1]
-        path_to_folderOutput = path_to_folder[:-1]
-        last_slash = path_to_folderOutput.rfind("\\")
-        path_to_folderOutput = path_to_folder[:last_slash + 1]
-        # Read
-        path_to_file = path_to_folder + "optionsSP.txt"
-        file_options = open(path_to_file, 'r')
-        # Шаблон: х) параметр
-        prev_i = 0
-        file_options_lines = file_options.readlines()
-        for strInput in file_options_lines:
-            if strInput[0] == NUMBER_NAME:
-                device_name = strInput[3:-1]
-            if strInput[0] == NUMBER_RAZMER_X:
-                size_x = float(strInput[3:-1])
-            if strInput[0] == NUMBER_RAZMER_Y:
-                size_y = float(strInput[3:-1])
-            if strInput[0] == NUMBER_KOLVO_X:
-                devices_number_x = int(strInput[3:-1])
-            if strInput[0] == NUMBER_KOLVO_Y:
-                devices_number_y = int(strInput[3:-1])
-            if strInput[0] == NUMBER_SPLIT_SIZE:
-                if strInput.find("False") != -1:
-                    split_size_type = False
-                else:
-                    split_size_type = True
-            if strInput[0] == NUMBER_SHOW_PLOT:
-                if strInput.find("False") != -1:
-                    show_plot = False
-                else:
-                    show_plot = True
-            if strInput[0] == NUMBER_SD_CHMT:
-                if strInput.find("False") != -1:
-                    copy_to_sd_chmt = False
-                else:
-                    copy_to_sd_chmt = True
-            if strInput[0] == NUMBER_SD_dispenser:
-                if strInput.find("False") != -1:
-                    copy_to_sd_dispenser = False
-                else:
-                    copy_to_sd_dispenser = True
-            if strInput[0] == "k":
-                pos = strInput.find(")")
-                i = int(strInput[1:pos]) - 1
-                if i > prev_i + 1:
-                    j = prev_i + 1
-                    while j < i:
-                        smd_kat = Smd(j, " ", " ")
-                        stacks.append(smd_kat)
-                        j += 1
-                prev_i = i
-                coils[i] = strInput[pos + 2:-1]
-                param_kat = coils[i].split()
-                if len(param_kat) < 2:
-                    param_kat = [" ", " "]
-                smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
-                stacks.append(smd_kat)
-                self.root.ids[str("kat" + str(i + 1))].text = coils[i]
-        file_options.close()
+        PcadConverter.read_options_file()
 
-        self.root.ti_device_name.text = device_name
-        self.root.ti_size_x.text = str(size_x)
-        self.root.ti_size_y.text = str(size_y)
-        self.root.ti_devices_number_x.text = str(devices_number_x)
-        self.root.ti_devices_number_y.text = str(devices_number_y)
-        self.root.cb_chart.active = show_plot
-        self.root.cb_sd_chmt.active = copy_to_sd_chmt
-        self.root.cb_sd_dispenser.active = copy_to_sd_dispenser
-        self.root.cb_split_size.active = split_size_type
-
-        # print(self.root.ids)
-        # self.root.ll_out.text = "sads"
+        Container.refresh_gui()
 
     # Основной метод для построения программы
     def build(self):
