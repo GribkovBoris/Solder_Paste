@@ -13,7 +13,7 @@ from tkinter import filedialog
 # ==================================================================
 import Gui_Automizer
 import Gui_Kivy
-import Smd_Class
+from Smd_Class import Smd
 
 
 # ***********************************************************************
@@ -22,6 +22,7 @@ class Point:
         self.x = x
         self.y = y
         self.line = line
+
 
 # ***********************************************************************
 ignore_rotation = False
@@ -85,6 +86,26 @@ class Component:
     LINE_START = 8
     LINE_END = 9
 
+    def __init__(self, center, angle, description, comp_type, pattern_name, value):
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.center = center
+        self.real_angle = angle
+        self.angle = 90 + angle
+        self.description = description
+        self.type = comp_type
+        self.pattern_name = pattern_name
+        self.value = value
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.onlyPaste = False
+        self.skip = 0
+        self.stack = None
+        self.sizeType = None
+        self.height = None
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.correct_values()
+        self.correct_angles(angle)
+        self.init_component_parameters()
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def correct_angles(self, angle):
         if self.pattern_name == "SM-6":
             self.angle = angle
@@ -296,27 +317,11 @@ class Component:
                 self.pins.append(Point(-4.6, 1.05, self.DOT_SMALL))
                 self.pins.append(Point(-4.6, 3.05, self.DOT_SMALL))
 
-    def __init__(self, center, angle, description, comp_type, pattern_name, value):
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.center = center
-        self.real_angle = angle
-        self.angle = 90 + angle
-        self.description = description
-        self.type = comp_type
-        self.pattern_name = pattern_name
-        self.value = value
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.skip = 0
+    def init_component_parameters(self):
         self.stack = 0
         self.height = 0.5
         self.error = True
-        self.onlyPaste = False
         self.sizeType = Smd.get_size_type(self.pattern_name)
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.correct_values()
-        self.correct_angles(angle)
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         for st in stacks:
             st_value = st.value
             self.onlyPaste = False
@@ -347,6 +352,7 @@ class Component:
                          pin.y * math.cos(self.real_angle * PI / 180)
                     pin.x = xz
                     pin.y = yz
+
 
 
 def input_pcad():
