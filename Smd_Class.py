@@ -24,31 +24,39 @@ class Smd:
 
     }
 
-    @staticmethod
-    def get_height(pattern_name):
-        return Smd.smdParams[pattern_name][0]
-
-    @staticmethod
-    def get_x_offset(pattern_name):
-        return Smd.smdParams[pattern_name][1]
-
-    @staticmethod
-    def get_y_offset(pattern_name):
-        return Smd.smdParams[pattern_name][2]
-
-    @staticmethod
-    def get_feed_rate(pattern_name):
-        return Smd.smdParams[pattern_name][3]
-
-    @staticmethod
-    def get_size_type(pattern_name):
-        return Smd.smdParams[pattern_name][4]
-
     def __init__(self, number, pattern_name, value):
         self.number = number
         self.value = value
         self.pattern_name = pattern_name
+        self.height = 0
+        self.height = self.get_height(pattern_name)
+
+    @staticmethod
+    def get_param(pattern_name, param_number):
+        param = 0
         try:
-            self.height = self.get_height(pattern_name)
-        except:
-            self.height = 0
+            param = Smd.smdParams[pattern_name][param_number]
+        except LookupError:
+            print("Компонент не найден в библиотеке")
+        return param
+
+
+    @staticmethod
+    def get_height(pattern_name):
+        return Smd.get_param(pattern_name, 0)
+
+    @staticmethod
+    def get_x_offset(pattern_name):
+        return Smd.get_param(pattern_name, 1)
+
+    @staticmethod
+    def get_y_offset(pattern_name):
+        return Smd.get_param(pattern_name, 2)
+
+    @staticmethod
+    def get_feed_rate(pattern_name):
+        return Smd.get_param(pattern_name, 3)
+
+    @staticmethod
+    def get_size_type(pattern_name):
+        return Smd.get_param(pattern_name, 4)

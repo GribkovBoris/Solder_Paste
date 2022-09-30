@@ -29,11 +29,14 @@ class PcadConverter:
     path_to_folder = os.path.abspath(__file__)
     path_to_folder_output = path_to_folder
 
+    def __init__(self):
+        pass
+
     def correct_coords(self):
-        point = path_to_folder.rfind("\\")
-        this_directory = path_to_folder[:point]
+        point = self.path_to_folder.rfind("\\")
+        this_directory = self.path_to_folder[:point]
         point = this_directory.rfind("\\")
-        this_directory = path_to_folder[:point]
+        this_directory = self.path_to_folder[:point]
 
         file_path = call_file_picker()  # call window that allows to pick file
         point = file_path.rfind("/") + 1
@@ -138,7 +141,7 @@ class PcadConverter:
             if not error:
                 input_text = Gui_Automizer.pcad_correct_coords(arr_coords)
 
-                file_input = path_to_folder + "Input.txt"
+                file_input = self.path_to_folder + "Input.txt"
                 file_out = open(file_input, 'w')
                 input_text = input_text.replace('\n', '')
                 # print(input_text)
@@ -146,9 +149,6 @@ class PcadConverter:
                 file_out.close()
 
     def input_saved(self):
-        global device_name
-        global size_x
-        global size_y
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(filetypes=[("Input files", ".txt")])
@@ -165,7 +165,7 @@ class PcadConverter:
             self.ti_device_name.text = device_name
             self.ti_size_x.text = str(size_x)
             self.ti_size_y.text = str(size_y)
-            shutil.copy(file_path, path_to_folder + "Input.txt")
+            shutil.copy(file_path, self.path_to_folder + "Input.txt")
         pass
 
     def create_dispenser_files(self):
@@ -235,8 +235,8 @@ class PcadConverter:
         board_x = 0
         board_y = 0
         coords_num = len(coords_sort)
-        for board_x in range(devices_number_x):
-            for board_y in range(devices_number_y):
+        for board_x in range(self.devices_number_x):
+            for board_y in range(self.devices_number_y):
                 if (board_x > 0) or (board_y > 0):
                     for coord in range(coords_num):
                         qdot = Point(coords_sort[coord].x + size_x * board_x,
@@ -254,8 +254,8 @@ class PcadConverter:
                     dot_max.x = coords_sort[i].x
                     dot_max.y = coords_sort[i].y
 
-        dot_max_b = Point(dot_max.x, dot_max.y - (devices_number_y - 1) * size_y)
-        dot_max_t = Point(dot_min.x, dot_min.y + (devices_number_y - 1) * size_y)
+        dot_max_b = Point(dot_max.x, dot_max.y - (self.devices_number_y - 1) * size_y)
+        dot_max_t = Point(dot_min.x, dot_min.y + (self.devices_number_y - 1) * size_y)
 
         dot_min.x = dot_min.x * 100
         dot_min.y = dot_min.y * 100
@@ -268,7 +268,7 @@ class PcadConverter:
 
         coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
         # --------------------------------------------------------------
-        file_name_control = path_to_folder_output + device_name + "t.nc"
+        file_name_control = self.path_to_folder_output + device_name + "t.nc"
         file_out_control = open(file_name_control, 'w')
         file_out_control.write(";start control\n")
         file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
@@ -280,7 +280,7 @@ class PcadConverter:
         file_out_control.write(";m2")
         file_out_control.close()
         # --------------------------------------------------------------
-        file_name_main = path_to_folder_output + device_name + ".nc"
+        file_name_main = self.path_to_folder_output + device_name + ".nc"
         file_code = open(file_name_main, 'w')
         # --------------------------------------------------------------
         file_code.write(";start\n")
@@ -300,7 +300,7 @@ class PcadConverter:
         file_code.write(";m2")
         file_code.close()
         # --------------------------------------------------------------
-        file_name = path_to_folder_output + device_name + "x.nc"
+        file_name = self.path_to_folder_output + device_name + "x.nc"
         file_code = open(file_name, 'w')
         # --------------------------------------------------------------
         file_code.write(";start control\n")
@@ -311,9 +311,9 @@ class PcadConverter:
         # self.PrintCustom("-------------------------------")
 
         # --------------------------------------------------------------
-        file_input_name = path_to_folder_output + device_name + "input" + str(size_x) + "x" + str(
+        file_input_name = self.path_to_folder_output + device_name + "input" + str(size_x) + "x" + str(
             size_y) + ".txt"
-        file_input = path_to_folder + "input.txt"
+        file_input = self.path_to_folder + "input.txt"
         shutil.copy(file_input, file_input_name)
         # --------------------------------------------------------------
         if copy_to_sd_dispenser:
@@ -333,7 +333,7 @@ class PcadConverter:
         if split_size_type:
             split_count = 2
         for split_file in range(split_count):
-            fin = open(path_to_file, 'r')
+            fin = open(self.path_to_file, 'r')
             if split_file:
                 size_type_small = True
             else:
@@ -346,7 +346,7 @@ class PcadConverter:
                     mark_file = "b"
             else:
                 mark_file = ""
-            file_chmt_name = path_to_folder_output + device_name + mark_file + ".csv"
+            file_chmt_name = self.path_to_folder_output + device_name + mark_file + ".csv"
             file_out = open(file_chmt_name, 'w')
             # ---------------------- Origin offset ----------------------
             file_out.close()
@@ -1191,5 +1191,6 @@ if __name__ == "__main__":
     threadExit = Gui_Automizer.MyThread("exit")
     threadExit.start()
     Gui_Kivy.init_window()
-    Gui_Kivy.DisplayApp().run()
+    app = Gui_Kivy.DisplayApp()
+    app.run()
 # ***********************************************************************

@@ -13,7 +13,8 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.core.window import Window
 # ==================================================================
-from Solder_Paste import PcadConverter
+import Solder_Paste
+# from Solder_Paste import PcadConverter
 from Smd_Class import Smd
 # ==================================================================
 
@@ -28,6 +29,7 @@ def init_window():
 
 
 class Container(BoxLayout):
+
     ti_size_x = ObjectProperty()
     ti_size_y = ObjectProperty()
     ti_devices_number_x = ObjectProperty()
@@ -56,6 +58,10 @@ class Container(BoxLayout):
     copy_to_sd_chmt = False
     copy_to_sd_dispenser = False
     coils = [" "] * NUMBER_COILS
+
+    def __init__(self, conv: Solder_Paste.PcadConverter, **kwargs):
+        super().__init__(**kwargs)
+        self.converter = conv
 
     def get_number_coils(self):
         return self.NUMBER_COILS
@@ -113,15 +119,12 @@ class Container(BoxLayout):
             if len(coil) == 2:
                 self.stacks[kat].value = coil[1]
                 self.stacks[kat].pattern_name = coil[0]
-                try:
-                    self.height = self.getHeight(self.stacks[kat].pattern_name)
-                except:
-                    self.height = 0
+                Smd.get_height(self.stacks[kat])
 
-    def raschet(self):
+    def calculate_pcad(self):
         self.print_custom("\n")
         self.read_gui()
-        PcadConverter.convert_pcad_to_files()
+        self.converter.convert_pcad_to_files()
 
 
 class DisplayApp(App):
@@ -129,14 +132,16 @@ class DisplayApp(App):
     # Создание всех виджетов (объектов)
     def __init__(self):
         super().__init__()
+        self.converter = Solder_Paste.PcadConverter()
+        self.cont = Container(self.converter)
 
     def on_start(self):
         bl_kat_l = BoxLayout()
         bl_kat_l.orientation = "vertical"
         bl_kat_r = BoxLayout()
         bl_kat_r.orientation = "vertical"
-        number_coils = Container.get_number_coils()
-        number_trays = Container.get_number_coils()
+        number_coils = self.cont.get_number_coils()
+        number_trays = self.cont.get_number_coils()
         for kat in range(number_coils):
             num = number_coils - kat - 1
             bl_kat = BoxLayout()
@@ -166,10 +171,10 @@ class DisplayApp(App):
         self.root.bl_coils.add_widget(bl_kat_l)
         self.root.bl_coils.add_widget(bl_kat_r)
 
-        PcadConverter.read_options_file()
+        self.converter.read_options_file()
 
-        Container.refresh_gui()
+        self.cont.refresh_gui()
 
     # Основной метод для построения программы
     def build(self):
-        return Container()
+        return self.cont
