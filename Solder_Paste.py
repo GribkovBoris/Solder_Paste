@@ -8,10 +8,9 @@ import win32api
 import win32file
 import ctypes
 import tkinter as tk
-from tkinter import *
 from tkinter import filedialog
 # ==================================================================
-import Gui_Automizer
+from Gui_Automizer import GuiAutomizer
 import Gui_Kivy
 from Smd_Class import Smd
 
@@ -30,7 +29,7 @@ class PcadConverter:
     path_to_folder_output = path_to_folder
 
     def __init__(self):
-        pass
+        self.out_text = ""
 
     def correct_coords(self):
         point = self.path_to_folder.rfind("\\")
@@ -139,7 +138,7 @@ class PcadConverter:
             file_main.close()
             # ============================================================
             if not error:
-                input_text = Gui_Automizer.pcad_correct_coords(arr_coords)
+                input_text = GuiAutomizer.pcad_correct_coords(arr_coords)
 
                 file_input = self.path_to_folder + "Input.txt"
                 file_out = open(file_input, 'w')
@@ -148,25 +147,6 @@ class PcadConverter:
                 file_out.write(input_text)
                 file_out.close()
 
-    def input_saved(self):
-        root = tk.Tk()
-        root.withdraw()
-        file_path = filedialog.askopenfilename(filetypes=[("Input files", ".txt")])
-        # D:/Programs/For_Work/Dev-Cpp/devcpp.exe
-        if file_path.find("input") != -1:
-            file_name = file_path.split("/")[-1]
-            pos = file_name.rfind(".")
-            file_name = file_name[:pos]
-            device_params = file_name.split("input")
-            device_name = device_params[0]
-            coords = device_params[1].split("x")
-            size_x = float(coords[0])
-            size_y = float(coords[1])
-            self.ti_device_name.text = device_name
-            self.ti_size_x.text = str(size_x)
-            self.ti_size_y.text = str(size_y)
-            shutil.copy(file_path, self.path_to_folder + "Input.txt")
-        pass
 
     def create_dispenser_files(self):
         # ----- Подготовка файла для дозатора -----
@@ -761,23 +741,27 @@ class PcadConverter:
         # ***********************************************************************
 
     def convert_pcad_to_files(self):
+        self.out_text = ""
         file_name = "input.txt"
         path_to_file = self.path_to_folder + file_name
         self.create_chmt_files()
 
-        if components:
+        if self.components:
             self.create_dispenser_files()
-            self.print_custom(f"Файл для станка CHM-T36:\n     {file_chmt_name}\n")
-            self.print_custom(f"Файл для дозатора (калибровочный):\n     {file_name_control}\n")
+            self.print_custom(f"Файл для станка CHM-T36:\n     {self.file_chmt_name}\n")
+            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.file_name_control}\n")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom("-------------------------------")
             random.seed()
 
-            if show_plot:
+            if self.show_plot:
                 run_graph_builder()
 
         self.create_options_file()
+
+    def print_custom(self, param):
+        self.out_text += param
 
 
 # ***********************************************************************
@@ -1099,7 +1083,7 @@ class Component:
 def input_pcad():
     file_input = path_to_folder + "Input.txt"
     file_out = open(file_input, 'w')
-    input_text = Gui_Automizer.pcad_reports()
+    input_text = GuiAutomizer.pcad_reports()
     # input_text = pyperclip.paste()
     input_text = input_text.replace('\n', '')
     print(input_text)
@@ -1188,7 +1172,7 @@ def run_graph_builder():
 # ***********************************************************************
 # Запуск проекта
 if __name__ == "__main__":
-    threadExit = Gui_Automizer.MyThread("exit")
+    threadExit = GuiAutomizer.MyThread("exit")
     threadExit.start()
     Gui_Kivy.init_window()
     app = Gui_Kivy.DisplayApp()

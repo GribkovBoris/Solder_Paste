@@ -1,20 +1,17 @@
 # ==================================================================
 # Import kivy
+import shutil
+from tkinter import filedialog
+import tkinter as tk
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
-from kivy.clock import Clock
-from kivy.lang import Builder
 from kivy.core.window import Window
 # ==================================================================
 import Solder_Paste
-# from Solder_Paste import PcadConverter
 from Smd_Class import Smd
 # ==================================================================
 
@@ -121,6 +118,25 @@ class Container(BoxLayout):
                 self.stacks[kat].pattern_name = coil[0]
                 Smd.get_height(self.stacks[kat])
 
+    def input_saved(self):
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(filetypes=[("Input files", ".txt")])
+        # D:/Programs/For_Work/Dev-Cpp/devcpp.exe
+        if file_path.find("input") != -1:
+            file_name = file_path.split("/")[-1]
+            pos = file_name.rfind(".")
+            file_name = file_name[:pos]
+            device_params = file_name.split("input")
+            device_name = device_params[0]
+            coords = device_params[1].split("x")
+            size_x = float(coords[0])
+            size_y = float(coords[1])
+            self.ti_device_name.text = device_name
+            self.ti_size_x.text = str(size_x)
+            self.ti_size_y.text = str(size_y)
+            shutil.copy(file_path, self.path_to_folder + "Input.txt")
+        pass
     def calculate_pcad(self):
         self.print_custom("\n")
         self.read_gui()

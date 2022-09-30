@@ -40,7 +40,6 @@ class Smd:
             print("Компонент не найден в библиотеке")
         return param
 
-
     @staticmethod
     def get_height(pattern_name):
         return Smd.get_param(pattern_name, 0)
