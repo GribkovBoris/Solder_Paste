@@ -13,6 +13,7 @@ from tkinter import filedialog
 from Gui_Automizer import GuiAutomizer
 import Gui_Kivy
 from Smd_Class import Smd
+from Gui_Kivy import InterfaceData
 
 
 # ***********************************************************************
@@ -29,7 +30,12 @@ class PcadConverter:
     path_to_folder_output = path_to_folder
 
     def __init__(self):
+        self.components = []
         self.out_text = ""
+        self.interface_data = None
+
+    def set_interface_data(self, interface_data_: InterfaceData):
+        self.interface_data = interface_data_
 
     def correct_coords(self):
         point = self.path_to_folder.rfind("\\")
@@ -147,7 +153,6 @@ class PcadConverter:
                 file_out.write(input_text)
                 file_out.close()
 
-
     def create_dispenser_files(self):
         # ----- Подготовка файла для дозатора -----
         # ------------ Read PNP file --------------
@@ -155,7 +160,7 @@ class PcadConverter:
         # Coord ged and mux coeff
         coords = []
         coords_save = []
-        for com in components:
+        for com in self.components:
             for coord in com.pins:
                 coords.append(coord)
         for com in coords:
@@ -201,12 +206,12 @@ class PcadConverter:
             qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
             coords_sort.append(qdot)
             coords.pop(min_len_index)
-            if qdot.line == self.LINE_START:
+            if qdot.line == Component.LINE_START:
                 qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
                 coords_sort.append(qdot)
                 coords.pop(min_len_index)
             else:
-                if qdot.line == self.LINE_END:
+                if qdot.line == Component.LINE_END:
                     qdot = Point(coords[min_len_index - 1].x, coords[min_len_index - 1].y,
                                  coords[min_len_index - 1].line)
                     coords_sort.append(qdot)
@@ -215,12 +220,12 @@ class PcadConverter:
         board_x = 0
         board_y = 0
         coords_num = len(coords_sort)
-        for board_x in range(self.devices_number_x):
-            for board_y in range(self.devices_number_y):
+        for board_x in range(self.interface_data.devices_number_x):
+            for board_y in range(self.interface_data.devices_number_y):
                 if (board_x > 0) or (board_y > 0):
                     for coord in range(coords_num):
-                        qdot = Point(coords_sort[coord].x + size_x * board_x,
-                                     coords_sort[coord].y + size_y * board_y,
+                        qdot = Point(coords_sort[coord].x + self.interface_data.size_x * board_x,
+                                     coords_sort[coord].y + self.interface_data.size_y * board_y,
                                      coords_sort[coord].line)
                         coords_sort.append(qdot)
         # --------------------------------------------------------------
@@ -234,8 +239,10 @@ class PcadConverter:
                     dot_max.x = coords_sort[i].x
                     dot_max.y = coords_sort[i].y
 
-        dot_max_b = Point(dot_max.x, dot_max.y - (self.devices_number_y - 1) * size_y)
-        dot_max_t = Point(dot_min.x, dot_min.y + (self.devices_number_y - 1) * size_y)
+        dot_max_b = Point(dot_max.x,
+                          dot_max.y - (self.interface_data.devices_number_y - 1) * self.interface_data.size_y)
+        dot_max_t = Point(dot_min.x,
+                          dot_min.y + (self.interface_data.devices_number_y - 1) * self.interface_data.size_y)
 
         dot_min.x = dot_min.x * 100
         dot_min.y = dot_min.y * 100
@@ -248,7 +255,7 @@ class PcadConverter:
 
         coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
         # --------------------------------------------------------------
-        file_name_control = self.path_to_folder_output + device_name + "t.nc"
+        file_name_control = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
         file_out_control = open(file_name_control, 'w')
         file_out_control.write(";start control\n")
         file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
@@ -260,7 +267,7 @@ class PcadConverter:
         file_out_control.write(";m2")
         file_out_control.close()
         # --------------------------------------------------------------
-        file_name_main = self.path_to_folder_output + device_name + ".nc"
+        file_name_main = self.path_to_folder_output + self.interface_data.device_name + ".nc"
         file_code = open(file_name_main, 'w')
         # --------------------------------------------------------------
         file_code.write(";start\n")
@@ -268,7 +275,8 @@ class PcadConverter:
         for i in range(len(coords_sort)):
             coords_sort[i].x = (coords_sort[i].x * 100)
             coords_sort[i].y = (coords_sort[i].y * 100)
-            if (coords_sort[i].line == self.LINE_START) or (coords_sort[i].line == self.LINE_END):
+            if (coords_sort[i].line == self.interface_data.LINE_START) or \
+                    (coords_sort[i].line == self.interface_data.LINE_END):
                 prefix = "l"
             else:
                 prefix = "d" + str(coords_sort[i].line)
@@ -291,12 +299,12 @@ class PcadConverter:
         # self.PrintCustom("-------------------------------")
 
         # --------------------------------------------------------------
-        file_input_name = self.path_to_folder_output + device_name + "input" + str(size_x) + "x" + str(
-            size_y) + ".txt"
+        file_input_name = self.path_to_folder_output + self.interface_data.device_name + \
+                          "input" + str(self.interface_data.size_x) + "x" + str(self.interface_data.size_y) + ".txt"
         file_input = self.path_to_folder + "input.txt"
         shutil.copy(file_input, file_input_name)
         # --------------------------------------------------------------
-        if copy_to_sd_dispenser:
+        if self.interface_data.copy_to_sd_dispenser:
             if len(drives_rem) == 1:
                 shutil.copy(file_name_control, file_sd)
                 shutil.copy(file_name_main, file_sd)
@@ -310,7 +318,7 @@ class PcadConverter:
 
     def create_chmt_files(self):
         split_count = 1
-        if split_size_type:
+        if self.interface_data.split_size_type:
             split_count = 2
         for split_file in range(split_count):
             fin = open(self.path_to_file, 'r')
@@ -319,14 +327,14 @@ class PcadConverter:
             else:
                 size_type_small = False
             # Write
-            if split_size_type:
+            if self.interface_data.split_size_type:
                 if size_type_small:
                     mark_file = "s"
                 else:
                     mark_file = "b"
             else:
                 mark_file = ""
-            file_chmt_name = self.path_to_folder_output + device_name + mark_file + ".csv"
+            file_chmt_name = self.path_to_folder_output + self.interface_data.device_name + mark_file + ".csv"
             file_out = open(file_chmt_name, 'w')
             # ---------------------- Origin offset ----------------------
             file_out.close()
@@ -392,9 +400,9 @@ class PcadConverter:
             else:
                 file_out.write(str(4))
             file_out.write(",")
-            file_out.write(f"{size_x},{size_y},")
-            file_out.write(f"{devices_number_x},{devices_number_y}\n\n")
-            # ---------------------- List of components ----------------------
+            file_out.write(f"{self.interface_data.size_x},{self.interface_data.size_y},")
+            file_out.write(f"{self.interface_data.devices_number_x},{self.interface_data.devices_number_y}\n\n")
+            # ---------------------- List of self.components ----------------------
             # ccf9cdb7bac5
             file_out.close()
             file_out = open(file_chmt_name, 'ab')
@@ -443,8 +451,7 @@ class PcadConverter:
             table_data = [
                 ['error', 'number', 'head', 'stack', 'x', 'y', 'angle', 'h', '0', 'type', 'description', 'speed']
             ]
-            components = []
-            components_fail = []
+            self.components_fail = []
             # self.PrintCustom("k")
             searching_start = 1
             searching_start_cnt = 0
@@ -497,13 +504,13 @@ class PcadConverter:
                     found = False
                     number += 1
                     if not cur_comp.error:
-                        components.append(cur_comp)
+                        self.components.append(cur_comp)
                         found = True
                         # Формирование кода для станка
                         number_auto += 1
                         # if(not self.root.ids[str("cbKat"+str(kat.number))].enabled):
                         #   flag = False
-                        if not split_size_type:
+                        if not self.interface_data.split_size_type:
                             if cur_comp.sizeType == 0:
                                 head = 2
                             else:
@@ -550,13 +557,13 @@ class PcadConverter:
 
                     if not found:
                         number_decline += 1
-                        components_fail.append(cur_comp)
+                        self.components_fail.append(cur_comp)
             file_out.close()
             fin.close()
 
             # self.PrintCustom("-------------------------------------------------------------------")
         # self.PrintCustom(f"Катушки:")
-        for kat in stacks:
+        for kat in self.interface_data.stacks:
             if kat.number > 0:
                 if kat.value != "":
                     pass
@@ -567,7 +574,7 @@ class PcadConverter:
                 flag = 0
                 # self.PrintCustom("")
                 only_dot_flag = False
-                for com in components:
+                for com in self.components:
                     kat_value = kat.value
                     if kat_value.find("*") != -1:
                         kat_value = kat_value.replace("*", "")
@@ -613,7 +620,7 @@ class PcadConverter:
         i = 0
         type_unique = []
         value_unique = []
-        for k in components_fail:
+        for k in self.components_fail:
             allow_adding = False
             # self.PrintCustom("+++++++++++++++++++++++++")
             # self.PrintCustom(len(type_unique))
@@ -644,14 +651,16 @@ class PcadConverter:
         if len(drives_rem) == 1:
             file_sd = drives_rem[0]
         # print(len(drives_rem))
-        if copy_to_sd_chmt:
+        if self.interface_data.copy_to_sd_chmt:
             if len(drives_rem) == 1:
-                if not split_size_type:
+                if not self.interface_data.split_size_type:
                     shutil.copy(file_chmt_name, file_sd)
                 else:
-                    file_chmt_name = path_to_folder_output + device_name + "s" + ".csv"
+                    file_chmt_name = self.interface_data.path_to_folder_output + \
+                                     self.interface_data.device_name + "s" + ".csv"
                     shutil.copy(file_chmt_name, file_sd)
-                    file_chmt_name = path_to_folder_output + device_name + "b" + ".csv"
+                    file_chmt_name = self.interface_data.path_to_folder_output + \
+                                     self.interface_data.device_name + "b" + ".csv"
                     shutil.copy(file_chmt_name, file_sd)
             if len(drives_rem) == 0:
                 ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
@@ -660,8 +669,8 @@ class PcadConverter:
                                                     u"записан.", u"Ошибка", 0)
 
     def read_options_file(self):
-        last_slash = path_to_folder.rfind("\\")
-        path_to_folder = path_to_folder[:last_slash + 1]
+        last_slash = self.interface_data.path_to_folder.rfind("\\")
+        path_to_folder = self.interface_data.path_to_folder[:last_slash + 1]
         path_to_folder_output = path_to_folder[:-1]
         last_slash = path_to_folder_output.rfind("\\")
         path_to_folder_output = path_to_folder[:last_slash + 1]
@@ -709,29 +718,30 @@ class PcadConverter:
                     j = prev_i + 1
                     while j < i:
                         smd_kat = Smd(j, " ", " ")
-                        stacks.append(smd_kat)
+                        self.interface_data.stacks.append(smd_kat)
                         j += 1
                 prev_i = i
-                coils[i] = str_input[pos + 2:-1]
-                param_kat = coils[i].split()
+                self.interface_data.coils[i] = str_input[pos + 2:-1]
+                param_kat = self.interface_data.coils[i].split()
                 if len(param_kat) < 2:
                     param_kat = [" ", " "]
                 smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
-                stacks.append(smd_kat)
-                self.root.ids[str("kat" + str(i + 1))].text = coils[i]
+                self.interface_data.stacks.append(smd_kat)
+                self.root.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i]
         file_options.close()
 
     def create_options_file(self):
-        file_options_lines = [NUMBER_NAME + ") " + str(self.device_name), NUMBER_SIZE_X + ") " + str(self.size_x),
-                              NUMBER_SIZE_Y + ") " + str(self.size_y),
-                              NUMBER_NUMBER_X + ") " + str(self.devices_number_x),
-                              NUMBER_NUMBER_Y + ") " + str(self.devices_number_y),
-                              NUMBER_SHOW_PLOT + ") " + str(self.show_plot),
-                              NUMBER_SD_CHMT + ") " + str(self.copy_to_sd_chmt),
-                              NUMBER_SD_DISPENSER + ") " + str(self.copy_to_sd_dispenser),
-                              NUMBER_SPLIT_SIZE + ") " + str(self.split_size_type)]
-        for kat in range(NUMBER_COILS):
-            file_options_lines.append("k" + str(kat + 1) + ") " + self.coils[kat])
+        file_options_lines = [NUMBER_NAME + ") " + str(self.interface_data.device_name), NUMBER_SIZE_X + ") " +
+                              str(self.interface_data.size_x),
+                              NUMBER_SIZE_Y + ") " + str(self.interface_data.size_y),
+                              NUMBER_NUMBER_X + ") " + str(self.interface_data.devices_number_x),
+                              NUMBER_NUMBER_Y + ") " + str(self.interface_data.devices_number_y),
+                              NUMBER_SHOW_PLOT + ") " + str(self.interface_data.show_plot),
+                              NUMBER_SD_CHMT + ") " + str(self.interface_data.copy_to_sd_chmt),
+                              NUMBER_SD_DISPENSER + ") " + str(self.interface_data.copy_to_sd_dispenser),
+                              NUMBER_SPLIT_SIZE + ") " + str(self.interface_data.split_size_type)]
+        for kat in range(self.interface_data.NUMBER_COILS):
+            file_options_lines.append("k" + str(kat + 1) + ") " + self.interface_data.coils[kat])
 
         file_options = open(self.path_to_folder + "optionsSP.txt", 'w')
         for strInput in file_options_lines:
@@ -746,16 +756,16 @@ class PcadConverter:
         path_to_file = self.path_to_folder + file_name
         self.create_chmt_files()
 
-        if self.components:
+        if self.interface_data.components:
             self.create_dispenser_files()
-            self.print_custom(f"Файл для станка CHM-T36:\n     {self.file_chmt_name}\n")
-            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.file_name_control}\n")
+            self.print_custom(f"Файл для станка CHM-T36:\n     {self.interface_data.file_chmt_name}\n")
+            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.interface_data.file_name_control}\n")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom("-------------------------------")
             random.seed()
 
-            if self.show_plot:
+            if self.interface_data.show_plot:
                 run_graph_builder()
 
         self.create_options_file()
@@ -1081,7 +1091,7 @@ class Component:
 
 
 def input_pcad():
-    file_input = path_to_folder + "Input.txt"
+    file_input = self.path_to_folder + "Input.txt"
     file_out = open(file_input, 'w')
     input_text = GuiAutomizer.pcad_reports()
     # input_text = pyperclip.paste()
@@ -1112,8 +1122,7 @@ def find_file_with_same_name(directory, file_name):
             break
     return main_file_path != ""
 
-
-def run_graph_builder():
+def run_graph_builder(self):
     axes_x = []
     axes_y = []
     axes_xs = []
@@ -1127,12 +1136,12 @@ def run_graph_builder():
     axes_t_xl = []
     axes_t_yl = []
     plt.ion()
-    for i in coords_sort:
+    for i in self.coords_sort:
         if axes_xr[1] < i.x / 100:
             axes_xr[1] = i.x / 100 + 5
         if axes_yr[1] < i.y / 100:
             axes_yr[1] = i.y / 100 + 5
-    for k in components:
+    for k in self.components:
         if k.value != "":
             plt.text(k.center.x - len(k.value) / 2, k.center.y + 0.5 + random.random(), k.value)
         else:
@@ -1140,13 +1149,13 @@ def run_graph_builder():
         axes_xc.append(k.center.x)
         axes_yc.append(k.center.y)
     line_flag = False
-    for i in coords_cal:
+    for i in self.coords_cal:
         axes_t_xl.append(i.x / 100)
         axes_t_yl.append(i.y / 100)
-    for i in coords_save:
+    for i in self.coords_save:
         axes_xs.append(i.x)
         axes_ys.append(i.y)
-    for i in coords_sort:
+    for i in self.coords_sort:
         axes_x.append(i.x / 100)
         axes_y.append(i.y / 100)
         if True:

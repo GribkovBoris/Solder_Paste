@@ -13,6 +13,8 @@ from kivy.core.window import Window
 # ==================================================================
 import Solder_Paste
 from Smd_Class import Smd
+
+
 # ==================================================================
 
 
@@ -25,8 +27,25 @@ def init_window():
     Window.title = "Solder Paste"
 
 
-class Container(BoxLayout):
+class InterfaceData:
+    NUMBER_COILS = 32
+    NUMBER_TRAYS = 3
 
+    def __init__(self):
+        self.stacks = []
+        self.device_name = "test"
+        self.size_x = 1
+        self.size_y = 1
+        self.devices_number_x = 1
+        self.devices_number_y = 1
+        self.split_size_type = False
+        self.show_plot = False
+        self.copy_to_sd_chmt = False
+        self.copy_to_sd_dispenser = False
+        self.coils = [" "] * self.NUMBER_COILS
+
+
+class Container(BoxLayout):
     ti_size_x = ObjectProperty()
     ti_size_y = ObjectProperty()
     ti_devices_number_x = ObjectProperty()
@@ -41,24 +60,11 @@ class Container(BoxLayout):
     cb_split_size = ObjectProperty()
     b_input_saved = ObjectProperty()
 
-    NUMBER_COILS = 32
-    NUMBER_TRAYS = 3
-
-    stacks = []
-    device_name = "test"
-    size_x = 1
-    size_y = 1
-    devices_number_x = 1
-    devices_number_y = 1
-    split_size_type = False
-    show_plot = False
-    copy_to_sd_chmt = False
-    copy_to_sd_dispenser = False
-    coils = [" "] * NUMBER_COILS
-
     def __init__(self, conv: Solder_Paste.PcadConverter, **kwargs):
         super().__init__(**kwargs)
         self.converter = conv
+        self.interface_data = InterfaceData()
+        self.converter.set_interface_data(self.interface_data)
 
     def get_number_coils(self):
         return self.NUMBER_COILS
@@ -83,46 +89,45 @@ class Container(BoxLayout):
 
     def read_gui(self):
         self.ll_out.text = ""
-        self.device_name = self.ti_device_name.text
-        self.size_x = float(self.ti_size_x.text)
-        self.size_y = float(self.ti_size_y.text)
-        self.devices_number_x = int(self.ti_devices_number_x.text)
-        self.devices_number_y = int(self.ti_devices_number_y.text)
+        self.interface_data.device_name = self.ti_device_name.text
+        self.interface_data.size_x = float(self.ti_size_x.text)
+        self.interface_data.size_y = float(self.ti_size_y.text)
+        self.interface_data.devices_number_x = int(self.ti_devices_number_x.text)
+        self.interface_data.devices_number_y = int(self.ti_devices_number_y.text)
         if self.cb_chart.active:
-            self.show_plot = True
+            self.interface_data.show_plot = True
         else:
-            self.show_plot = False
+            self.interface_data.show_plot = False
         if self.cb_sd_chmt.active:
-            self.copy_to_sd_chmt = True
+            self.interface_data.copy_to_sd_chmt = True
         else:
-            self.copy_to_sd_chmt = False
+            self.interface_data.copy_to_sd_chmt = False
         if self.cb_sd_dispenser.active:
-            self.copy_to_sd_dispenser = True
+            self.interface_data.copy_to_sd_dispenser = True
         else:
-            self.copy_to_sd_dispenser = False
+            self.interface_data.copy_to_sd_dispenser = False
         if self.cb_split_size.active:
-            self.split_size_type = True
+            self.interface_data.split_size_type = True
         else:
-            self.split_size_type = False
+            self.interface_data.split_size_type = False
 
         if self.devices_number_x == 0:
-            self.devices_number_x = 1
+            self.interface_data.devices_number_x = 1
         if self.devices_number_y == 0:
-            self.devices_number_y = 1
+            self.interface_data.devices_number_y = 1
         # print(self.ids)
         for kat in range(self.NUMBER_COILS):
-            self.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
-            coil = self.coils[kat].split()
+            self.interface_data.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
+            coil = self.interface_data.coils[kat].split()
             if len(coil) == 2:
-                self.stacks[kat].value = coil[1]
-                self.stacks[kat].pattern_name = coil[0]
-                Smd.get_height(self.stacks[kat])
+                self.interface_data.stacks[kat].value = coil[1]
+                self.interface_data.stacks[kat].pattern_name = coil[0]
+                Smd.get_height(self.interface_data.stacks[kat])
 
     def input_saved(self):
         root = tk.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(filetypes=[("Input files", ".txt")])
-        # D:/Programs/For_Work/Dev-Cpp/devcpp.exe
         if file_path.find("input") != -1:
             file_name = file_path.split("/")[-1]
             pos = file_name.rfind(".")
@@ -135,8 +140,9 @@ class Container(BoxLayout):
             self.ti_device_name.text = device_name
             self.ti_size_x.text = str(size_x)
             self.ti_size_y.text = str(size_y)
-            shutil.copy(file_path, self.path_to_folder + "Input.txt")
+            shutil.copy(file_path, self.converter.path_to_folder + "Input.txt")
         pass
+
     def calculate_pcad(self):
         self.print_custom("\n")
         self.read_gui()
