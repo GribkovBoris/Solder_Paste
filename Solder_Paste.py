@@ -26,13 +26,52 @@ class Point:
 
 # ***********************************************************************
 class PcadConverter:
+    # ***********************************************************************
     path_to_folder = os.path.abspath(__file__)
     path_to_folder_output = path_to_folder
+    # ***********************************************************************
+    ignore_rotation = False
+    use_only_one_head = False
+    # ***********************************************************************
+    NUMBER_NAME = "1"
+    NUMBER_SIZE_X = "2"
+    NUMBER_SIZE_Y = "3"
+    NUMBER_NUMBER_X = "4"
+    NUMBER_NUMBER_Y = "5"
+    NUMBER_SHOW_PLOT = "6"
+    NUMBER_SD_CHMT = "7"
+    NUMBER_SD_DISPENSER = "8"
+    NUMBER_SPLIT_SIZE = "9"
+    # ***********************************************************************
+    DRIVE_REMOVABLE = 2
+    PI = 3.14159265
+    # ***********************************************************************
+    FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
+    SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
+                    b'\xd7\xa2\xca\xcd '
+    THIRD_STRING = b'%,\xc6\xb4\xb0\xe51,X,Y,'
+    FOURTH_STRING = b'%,\xcc\xf9\xcd\xb7\xba\xc5,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xc7\xb6\xc8,\xb8\xdf\xb6\xc8,' \
+                    b'\xcc\xf8\xb9\xfd,\xcb\xd9\xb6\xc8,\xcb\xb5\xc3\xf7,\xd7\xa2\xca\xcd '
+
+    # ***********************************************************************
 
     def __init__(self):
         self.components = []
         self.out_text = ""
         self.interface_data = None
+        self.drives_rem = []
+        self.stack_error = 0
+        # ***********************************************************************
+        self.file_sd = "E:/"
+        self.allow_convert = 0
+        self.ignore_coef = 0
+        self.coord_coef = 0.801
+        self.x_coef = 1.0
+        self.y_coef = 1.0
+        self.size_type_small = True
+        self.chmtx_coef = 1.0
+        self.chmty_coef = 1.0
+        self.path_to_file = ""
 
     def set_interface_data(self, interface_data_: InterfaceData):
         self.interface_data = interface_data_
@@ -288,7 +327,7 @@ class PcadConverter:
         file_code.write(";m2")
         file_code.close()
         # --------------------------------------------------------------
-        file_name = self.path_to_folder_output + device_name + "x.nc"
+        file_name = self.path_to_folder_output + self.interface_data.device_name + "x.nc"
         file_code = open(file_name, 'w')
         # --------------------------------------------------------------
         file_code.write(";start control\n")
@@ -304,15 +343,16 @@ class PcadConverter:
         file_input = self.path_to_folder + "input.txt"
         shutil.copy(file_input, file_input_name)
         # --------------------------------------------------------------
+        file_sd = self.get_drive()
         if self.interface_data.copy_to_sd_dispenser:
-            if len(drives_rem) == 1:
+            if len(self.drives_rem) == 1:
                 shutil.copy(file_name_control, file_sd)
                 shutil.copy(file_name_main, file_sd)
                 shutil.copy(file_name, file_sd)
                 shutil.copy(file_name, file_sd)
-            if len(drives_rem) == 0:
+            if len(self.drives_rem) == 0:
                 ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
-            if len(drives_rem) > 1:
+            if len(self.drives_rem) > 1:
                 ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл "
                                                     u"не записан.", u"Ошибка", 0)
 
@@ -340,7 +380,7 @@ class PcadConverter:
             file_out.close()
             file_out = open(file_chmt_name, 'ab')
             # FIRST_STRING = b'\x25\x2c\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6'
-            file_out.write(FIRST_STRING)
+            file_out.write(self.FIRST_STRING)
             file_out.close()
             file_out = open(file_chmt_name, 'a')
             file_out.write("\n")
@@ -358,12 +398,12 @@ class PcadConverter:
             file_out.close()
             file_out = open(file_chmt_name, 'ab')
             # SECOND_STRING = b'\x25\x2c\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6'
-            file_out.write(SECOND_STRING)
+            file_out.write(self.SECOND_STRING)
             file_out.close()
             file_out = open(file_chmt_name, 'a')
             file_out.write("\n")
             feed_rate = 2
-            for kat in stacks:
+            for kat in self.interface_data.stacks:
                 if (kat.number != 0) and (kat.pattern_name != " "):
                     file_out.write("65535,1,")
                     file_out.write(str(kat.number))
@@ -390,12 +430,12 @@ class PcadConverter:
             file_out.close()
             file_out = open(file_chmt_name, 'ab')
             # THIRD_STRING = b'\x25\x2c\xc6\xb4\xb0\xe5\x31\x2c\x58'
-            file_out.write(THIRD_STRING)
+            file_out.write(self.THIRD_STRING)
             file_out.close()
             file_out = open(file_chmt_name, 'a')
             file_out.write("\n")
             file_out.write("65535,")
-            if size_x * size_y == 1:
+            if self.interface_data.size_x * self.interface_data.size_y == 1:
                 file_out.write(str(3))
             else:
                 file_out.write(str(4))
@@ -407,7 +447,7 @@ class PcadConverter:
             file_out.close()
             file_out = open(file_chmt_name, 'ab')
             # FOURTH_STRING = b'\x25\x2c\xcc\xf9\xcd\xb7\xba\xc5'
-            file_out.write(FOURTH_STRING)
+            file_out.write(self.FOURTH_STRING)
             file_out.close()
             file_out = open(file_chmt_name, 'a')
             file_out.write("\n")
@@ -560,6 +600,18 @@ class PcadConverter:
                         self.components_fail.append(cur_comp)
             file_out.close()
             fin.close()
+            file_sd = self.get_drive()
+            # print(len(self.drives_rem))
+            if self.interface_data.copy_to_sd_chmt and file_sd is not None:
+                if not self.interface_data.split_size_type:
+                    shutil.copy(file_chmt_name, file_sd)
+                else:
+                    file_chmt_name = self.interface_data.path_to_folder_output + \
+                                     self.interface_data.device_name + "s" + ".csv"
+                    shutil.copy(file_chmt_name, file_sd)
+                    file_chmt_name = self.interface_data.path_to_folder_output + \
+                                     self.interface_data.device_name + "b" + ".csv"
+                    shutil.copy(file_chmt_name, file_sd)
 
             # self.PrintCustom("-------------------------------------------------------------------")
         # self.PrintCustom(f"Катушки:")
@@ -601,13 +653,13 @@ class PcadConverter:
                 else:
                     pass
                     # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
-                stack_error = 2
+                self.stack_error = 2
 
-        if stack_error:
+        if self.stack_error:
             self.print_custom("-------------------------------------------------------------------")
-            if stack_error == 1:
+            if self.stack_error == 1:
                 self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
-            if stack_error == 2:
+            if self.stack_error == 2:
                 self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
             self.print_custom("-------------------------------------------------------------------\n")
 
@@ -642,31 +694,22 @@ class PcadConverter:
         self.print_custom("-------------------------------")
         # --------------------------------------------------------------
 
+    def get_drive(self):
         drives = win32api.GetLogicalDriveStrings()
         drives = drives.split('\000')[:-1]
         drives_rem = []
         for root in drives:
-            if win32file.GetDriveTypeW(root) == DRIVE_REMOVABLE:
-                drives_rem.append(root)
+            if win32file.GetDriveTypeW(root) == self.DRIVE_REMOVABLE:
+                self.drives_rem.append(root)
+        file_sd = None
         if len(drives_rem) == 1:
             file_sd = drives_rem[0]
-        # print(len(drives_rem))
-        if self.interface_data.copy_to_sd_chmt:
-            if len(drives_rem) == 1:
-                if not self.interface_data.split_size_type:
-                    shutil.copy(file_chmt_name, file_sd)
-                else:
-                    file_chmt_name = self.interface_data.path_to_folder_output + \
-                                     self.interface_data.device_name + "s" + ".csv"
-                    shutil.copy(file_chmt_name, file_sd)
-                    file_chmt_name = self.interface_data.path_to_folder_output + \
-                                     self.interface_data.device_name + "b" + ".csv"
-                    shutil.copy(file_chmt_name, file_sd)
-            if len(drives_rem) == 0:
-                ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
-            if len(drives_rem) > 1:
-                ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл не "
-                                                    u"записан.", u"Ошибка", 0)
+        if len(drives_rem) == 0:
+            ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
+        if len(drives_rem) > 1:
+            ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл не "
+                                                u"записан.", u"Ошибка", 0)
+        return file_sd
 
     def read_options_file(self):
         last_slash = self.interface_data.path_to_folder.rfind("\\")
@@ -681,32 +724,32 @@ class PcadConverter:
         prev_i = 0
         file_options_lines = file_options.readlines()
         for str_input in file_options_lines:
-            if str_input[0] == NUMBER_NAME:
+            if str_input[0] == self.NUMBER_NAME:
                 device_name = str_input[3:-1]
-            if str_input[0] == NUMBER_SIZE_X:
+            if str_input[0] == self.NUMBER_SIZE_X:
                 size_x = float(str_input[3:-1])
-            if str_input[0] == NUMBER_SIZE_Y:
+            if str_input[0] == self.NUMBER_SIZE_Y:
                 size_y = float(str_input[3:-1])
-            if str_input[0] == NUMBER_NUMBER_X:
+            if str_input[0] == self.NUMBER_NUMBER_X:
                 devices_number_x = int(str_input[3:-1])
-            if str_input[0] == NUMBER_NUMBER_Y:
+            if str_input[0] == self.NUMBER_NUMBER_Y:
                 devices_number_y = int(str_input[3:-1])
-            if str_input[0] == NUMBER_SPLIT_SIZE:
+            if str_input[0] == self.NUMBER_SPLIT_SIZE:
                 if str_input.find("False") != -1:
                     split_size_type = False
                 else:
                     split_size_type = True
-            if str_input[0] == NUMBER_SHOW_PLOT:
+            if str_input[0] == self.NUMBER_SHOW_PLOT:
                 if str_input.find("False") != -1:
                     show_plot = False
                 else:
                     show_plot = True
-            if str_input[0] == NUMBER_SD_CHMT:
+            if str_input[0] == self.NUMBER_SD_CHMT:
                 if str_input.find("False") != -1:
                     copy_to_sd_chmt = False
                 else:
                     copy_to_sd_chmt = True
-            if str_input[0] == NUMBER_SD_DISPENSER:
+            if str_input[0] == self.NUMBER_SD_DISPENSER:
                 if str_input.find("False") != -1:
                     copy_to_sd_dispenser = False
                 else:
@@ -731,15 +774,15 @@ class PcadConverter:
         file_options.close()
 
     def create_options_file(self):
-        file_options_lines = [NUMBER_NAME + ") " + str(self.interface_data.device_name), NUMBER_SIZE_X + ") " +
+        file_options_lines = [self.NUMBER_NAME + ") " + str(self.interface_data.device_name), NUMBER_SIZE_X + ") " +
                               str(self.interface_data.size_x),
-                              NUMBER_SIZE_Y + ") " + str(self.interface_data.size_y),
-                              NUMBER_NUMBER_X + ") " + str(self.interface_data.devices_number_x),
-                              NUMBER_NUMBER_Y + ") " + str(self.interface_data.devices_number_y),
-                              NUMBER_SHOW_PLOT + ") " + str(self.interface_data.show_plot),
-                              NUMBER_SD_CHMT + ") " + str(self.interface_data.copy_to_sd_chmt),
-                              NUMBER_SD_DISPENSER + ") " + str(self.interface_data.copy_to_sd_dispenser),
-                              NUMBER_SPLIT_SIZE + ") " + str(self.interface_data.split_size_type)]
+                              self.NUMBER_SIZE_Y + ") " + str(self.interface_data.size_y),
+                              self.NUMBER_NUMBER_X + ") " + str(self.interface_data.devices_number_x),
+                              self.NUMBER_NUMBER_Y + ") " + str(self.interface_data.devices_number_y),
+                              self.NUMBER_SHOW_PLOT + ") " + str(self.interface_data.show_plot),
+                              self.NUMBER_SD_CHMT + ") " + str(self.interface_data.copy_to_sd_chmt),
+                              self.NUMBER_SD_DISPENSER + ") " + str(self.interface_data.copy_to_sd_dispenser),
+                              self.NUMBER_SPLIT_SIZE + ") " + str(self.interface_data.split_size_type)]
         for kat in range(self.interface_data.NUMBER_COILS):
             file_options_lines.append("k" + str(kat + 1) + ") " + self.interface_data.coils[kat])
 
@@ -753,7 +796,7 @@ class PcadConverter:
     def convert_pcad_to_files(self):
         self.out_text = ""
         file_name = "input.txt"
-        path_to_file = self.path_to_folder + file_name
+        self.path_to_file = self.path_to_folder + file_name
         self.create_chmt_files()
 
         if self.interface_data.components:
@@ -772,45 +815,6 @@ class PcadConverter:
 
     def print_custom(self, param):
         self.out_text += param
-
-
-# ***********************************************************************
-ignore_rotation = False
-use_only_one_head = False
-# ***********************************************************************
-NUMBER_NAME = "1"
-NUMBER_SIZE_X = "2"
-NUMBER_SIZE_Y = "3"
-NUMBER_NUMBER_X = "4"
-NUMBER_NUMBER_Y = "5"
-NUMBER_SHOW_PLOT = "6"
-NUMBER_SD_CHMT = "7"
-NUMBER_SD_DISPENSER = "8"
-NUMBER_SPLIT_SIZE = "9"
-# ***********************************************************************
-DRIVE_REMOVABLE = 2
-# ***********************************************************************
-file_sd = "E:/"
-allow_convert = 0
-ignore_coef = 0
-stack_error = 0
-coord_coef = 0.801
-x_coef = 1.0
-y_coef = 1.0
-size_type_small = True
-chmtx_coef = 1.0
-chmty_coef = 1.0
-PI = 3.14159265
-# ***********************************************************************
-
-# ***********************************************************************
-# ***********************************************************************
-FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
-SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
-                b'\xd7\xa2\xca\xcd '
-THIRD_STRING = b'%,\xc6\xb4\xb0\xe51,X,Y,'
-FOURTH_STRING = b'%,\xcc\xf9\xcd\xb7\xba\xc5,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xc7\xb6\xc8,\xb8\xdf\xb6\xc8,' \
-                b'\xcc\xf8\xb9\xfd,\xcb\xd9\xb6\xc8,\xcb\xb5\xc3\xf7,\xd7\xa2\xca\xcd '
 
 
 # ***********************************************************************
@@ -1121,6 +1125,7 @@ def find_file_with_same_name(directory, file_name):
             main_file_path = directory + "\\" + f
             break
     return main_file_path != ""
+
 
 def run_graph_builder(self):
     axes_x = []
