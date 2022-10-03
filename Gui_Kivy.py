@@ -11,38 +11,19 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 # ==================================================================
-import Solder_Paste
+from Solder_Paste import PcadConverter
 from Smd_Class import Smd
+from Interface_Data_Class import InterfaceData
 
 
 # ==================================================================
-
-
-def init_window():
+def init_window(width, height):
     # Глобальные настройки
-    Window.size = (1400, 700)
+    Window.size = (width, height)
     Window.top = 100
     Window.left = 100
     Window.clear_color = (255 / 255, 186 / 255, 3 / 255, 1)
     Window.title = "Solder Paste"
-
-
-class InterfaceData:
-    NUMBER_COILS = 32
-    NUMBER_TRAYS = 3
-
-    def __init__(self):
-        self.stacks = []
-        self.device_name = "test"
-        self.size_x = 1
-        self.size_y = 1
-        self.devices_number_x = 1
-        self.devices_number_y = 1
-        self.split_size_type = False
-        self.show_plot = False
-        self.copy_to_sd_chmt = False
-        self.copy_to_sd_dispenser = False
-        self.coils = [" "] * self.NUMBER_COILS
 
 
 class Container(BoxLayout):
@@ -60,32 +41,41 @@ class Container(BoxLayout):
     cb_split_size = ObjectProperty()
     b_input_saved = ObjectProperty()
 
-    def __init__(self, conv: Solder_Paste.PcadConverter, **kwargs):
+    def __init__(self, conv: PcadConverter, **kwargs):
         super().__init__(**kwargs)
         self.converter = conv
         self.interface_data = InterfaceData()
         self.converter.set_interface_data(self.interface_data)
 
+    def raschet(self):
+        self.converter.convert_pcad_to_files()
+
+    def input_pcad(self):
+        self.converter.input_pcad()
+
+    def correct_coords(self):
+        self.converter.correct_coords()
+
     def get_number_coils(self):
-        return self.NUMBER_COILS
+        return self.interface_data.NUMBER_COILS
 
     def get_number_trays(self):
-        return self.NUMBER_TRAYS
+        return self.interface_data.NUMBER_TRAYS
 
     def print_custom(self, text, end="\n"):
         self.ll_out.text += text + end
         pass
 
     def refresh_gui(self):
-        self.root.ti_device_name.text = self.device_name
-        self.root.ti_size_x.text = str(self.size_x)
-        self.root.ti_size_y.text = str(self.size_y)
-        self.root.ti_devices_number_x.text = str(self.devices_number_x)
-        self.root.ti_devices_number_y.text = str(self.devices_number_y)
-        self.root.cb_chart.active = self.show_plot
-        self.root.cb_sd_chmt.active = self.copy_to_sd_chmt
-        self.root.cb_sd_dispenser.active = self.copy_to_sd_dispenser
-        self.root.cb_split_size.active = self.split_size_type
+        self.ti_device_name.text = self.interface_data.device_name
+        self.ti_size_x.text = str(self.interface_data.size_x)
+        self.ti_size_y.text = str(self.interface_data.size_y)
+        self.ti_devices_number_x.text = str(self.interface_data.devices_number_x)
+        self.ti_devices_number_y.text = str(self.interface_data.devices_number_y)
+        self.cb_chart.active = self.interface_data.show_plot
+        self.cb_sd_chmt.active = self.interface_data.copy_to_sd_chmt
+        self.cb_sd_dispenser.active = self.interface_data.copy_to_sd_dispenser
+        self.cb_split_size.active = self.interface_data.split_size_type
 
     def read_gui(self):
         self.ll_out.text = ""
@@ -116,13 +106,64 @@ class Container(BoxLayout):
         if self.devices_number_y == 0:
             self.interface_data.devices_number_y = 1
         # print(self.ids)
-        for kat in range(self.NUMBER_COILS):
-            self.interface_data.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
+        for kat in range(self.interface_data.NUMBER_COILS):
+            self.interface_data.coils[kat] = self.root.ids[str("kat" + str(kat + 1))].text
             coil = self.interface_data.coils[kat].split()
             if len(coil) == 2:
                 self.interface_data.stacks[kat].value = coil[1]
                 self.interface_data.stacks[kat].pattern_name = coil[0]
                 Smd.get_height(self.interface_data.stacks[kat])
+
+    def coils_fields_color(self):
+        stack_error = 0
+        # self.PrintCustom(f"Катушки:")
+        for kat in self.interface_data.stacks:
+            if kat.number > 0:
+                if kat.value != "":
+                    pass
+                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}, {kat.value}","")
+                else:
+                    pass
+                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}","")
+                flag = 0
+                # self.PrintCustom("")
+                only_dot_flag = False
+                for com in self.components:
+                    kat_value = kat.value
+                    if kat_value.find("*") != -1:
+                        kat_value = kat_value.replace("*", "")
+                        only_dot_flag = True
+                    if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
+                        if not only_dot_flag:
+                            flag = 1
+                        else:
+                            flag = 2
+                        break
+                if flag == 0:  # not using
+                    # self.PrintCustom(" - не используется")
+                    self.root.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
+                if flag == 1:  # full use
+                    # self.PrintCustom("")
+                    self.root.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
+                if flag == 2:  # paste only
+                    # self.PrintCustom("Только паста")
+                    self.root.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
+            else:
+                if kat.value != "":
+                    pass
+                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}, {kat.value}")
+                else:
+                    pass
+                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
+                stack_error = 2
+
+        if stack_error:
+            self.print_custom("-------------------------------------------------------------------")
+            if stack_error == 1:
+                self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
+            if stack_error == 2:
+                self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
+            self.print_custom("-------------------------------------------------------------------\n")
 
     def input_saved(self):
         root = tk.Tk()
@@ -154,8 +195,10 @@ class DisplayApp(App):
     # Создание всех виджетов (объектов)
     def __init__(self):
         super().__init__()
-        self.converter = Solder_Paste.PcadConverter()
-        self.cont = Container(self.converter)
+        self.cont = None
+        self.converter = PcadConverter()
+        self.interface_data = InterfaceData()
+        self.converter.set_interface_data(self.interface_data)
 
     def on_start(self):
         bl_kat_l = BoxLayout()
@@ -190,8 +233,8 @@ class DisplayApp(App):
         kat_text_input = TextInput(hint_text="1")
         kat_text_input.id = "kat"
         self.root.bl_coils.orientation = "horizontal"
-        self.root.bl_coils.add_widget(bl_kat_l)
-        self.root.bl_coils.add_widget(bl_kat_r)
+        self.cont.bl_coils.add_widget(bl_kat_l)
+        self.cont.bl_coils.add_widget(bl_kat_r)
 
         self.converter.read_options_file()
 
@@ -199,4 +242,6 @@ class DisplayApp(App):
 
     # Основной метод для построения программы
     def build(self):
-        return self.cont
+        self.load_kv('display.kv')
+        self.cont = Container(self.converter)
+        return self.cont  # self.cont

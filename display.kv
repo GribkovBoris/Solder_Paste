@@ -54,9 +54,9 @@
                 Label:
                     text:'"RefDes","Pattern","Type","Value","Layer","LocX","LocY","Rotation"'
                 Label:
-                    text:'"C3","0805","C0805","0.1","Top","58.786","7.018","270.0"' 
+                    text:'"C3","0805","C0805","0.1","Top","58.786","7.018","270.0"'
                 Label:
-                    text:'\nПри работе с PCAD, нужно сначала открыть\nнужный файл в PCAD и переключить окно на это.' 
+                    text:'\nПри работе с PCAD, нужно сначала открыть\nнужный файл в PCAD и переключить окно на это.'
             BoxLayout:
                 orientation:'vertical'
                 size_hint:(1,.8)
@@ -66,17 +66,17 @@
                     orientation:'horizontal'
                     Button:
                         id:bInputPcad
-                        text:'PCAD' 
+                        text:'PCAD'
                         on_release:
                             root.input_pcad()
                     Button:
                         id:bInputSaved
-                        text:'Существующий Input' 
+                        text:'Существующий Input'
                         on_release:
                             root.input_saved()
                 Button:
                     id:bCorrectCoords
-                    text:'Корректировка координат PCAD (файл *.csv)' 
+                    text:'Корректировка координат PCAD (файл *.csv)'
                     on_release:
                         root.correct_coords()
             BoxLayout:

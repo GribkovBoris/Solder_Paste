@@ -7,14 +7,14 @@ import win32con
 import win32api
 import time
 from threading import Thread
-from Solder_Paste import Point
+from Point_Class import Point
 
 
 # ---------------------------------------------------------------
 class MyThread(Thread):
     def __init__(self, name):
         Thread.__init__(self)
-        GuiAutomizer.name = name
+        # GuiAutomizer.name = name
 
         def on_press_esc(key):
             if key == Key.esc:

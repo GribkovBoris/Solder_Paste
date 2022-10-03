@@ -1,7 +1,6 @@
 # ==================================================================
 import os
 import shutil
-import math
 import matplotlib.pyplot as plt
 import random
 import win32api
@@ -9,29 +8,27 @@ import win32file
 import ctypes
 import tkinter as tk
 from tkinter import filedialog
+import math
 # ==================================================================
 from Gui_Automizer import GuiAutomizer
-import Gui_Kivy
+from Gui_Automizer import MyThread
 from Smd_Class import Smd
-from Gui_Kivy import InterfaceData
+from Interface_Data_Class import InterfaceData
+from Point_Class import Point
 
 
-# ***********************************************************************
-class Point:
-    def __init__(self, x, y, line=0):
-        self.x = x
-        self.y = y
-        self.line = line
+# ==================================================================
+
+
+def get_path_to_folder():
+    path_to_file = os.path.abspath(__file__)
+    last_slash = path_to_file.rfind("\\")
+    path_to_folder = path_to_file[:last_slash + 1]
+    return path_to_folder
 
 
 # ***********************************************************************
 class PcadConverter:
-    # ***********************************************************************
-    path_to_folder = os.path.abspath(__file__)
-    path_to_folder_output = path_to_folder
-    # ***********************************************************************
-    ignore_rotation = False
-    use_only_one_head = False
     # ***********************************************************************
     NUMBER_NAME = "1"
     NUMBER_SIZE_X = "2"
@@ -44,7 +41,6 @@ class PcadConverter:
     NUMBER_SPLIT_SIZE = "9"
     # ***********************************************************************
     DRIVE_REMOVABLE = 2
-    PI = 3.14159265
     # ***********************************************************************
     FIRST_STRING = b'%,\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6,X,Y,'
     SECOND_STRING = b'%,\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6,\xc1\xcf\xd5\xbb\xba\xc5,X,Y,\xbd\xf8\xb8\xf8\xc1\xbf,' \
@@ -56,6 +52,12 @@ class PcadConverter:
     # ***********************************************************************
 
     def __init__(self):
+        ignore_rotation = False  # TODO
+        use_only_one_head = False
+        self.path_to_folder = get_path_to_folder()
+        self.path_to_folder_output = self.path_to_folder
+        self.file_chmt_name = ""
+        self.file_name_control = ""
         self.components = []
         self.out_text = ""
         self.interface_data = None
@@ -73,6 +75,96 @@ class PcadConverter:
         self.chmty_coef = 1.0
         self.path_to_file = ""
 
+    @staticmethod
+    def input_pcad():
+        path_to_folder = get_path_to_folder()
+        file_input = path_to_folder + "Input.txt"
+        file_out = open(file_input, 'w')
+        input_text = GuiAutomizer.pcad_reports()
+        # input_text = pyperclip.paste()
+        input_text = input_text.replace('\n', '')
+        print(input_text)
+        file_out.write(input_text)
+        file_out.close()
+
+    @staticmethod
+    def call_file_picker():
+        root = tk.Tk()
+        root.withdraw()
+        return filedialog.askopenfilename(filetypes=[("Correct file", ".csv")])
+
+    @staticmethod
+    def find_file_with_same_name(directory, file_name):
+        """
+        Find file in directory, that has same name with received
+        :param directory: in which directory search file
+        :param file_name: name of file that need to be found
+        :return: bool, file found
+        """
+        files = os.listdir(directory)
+        main_file_path = ""
+        for f in files:
+            if file_name.find(f) != -1:
+                main_file_path = directory + "\\" + f
+                break
+        return main_file_path != ""
+
+    @staticmethod
+    def run_graph_builder(self):
+        axes_x = []
+        axes_y = []
+        axes_xs = []
+        axes_ys = []
+        axes_xc = []
+        axes_yc = []
+        axes_xr = [0, 0]
+        axes_yr = [0, 0]
+        axes_xl = []
+        axes_yl = []
+        axes_t_xl = []
+        axes_t_yl = []
+        plt.ion()
+        for i in self.coords_sort:
+            if axes_xr[1] < i.x / 100:
+                axes_xr[1] = i.x / 100 + 5
+            if axes_yr[1] < i.y / 100:
+                axes_yr[1] = i.y / 100 + 5
+        for k in self.components:
+            if k.value != "":
+                plt.text(k.center.x - len(k.value) / 2, k.center.y + 0.5 + random.random(), k.value)
+            else:
+                plt.text(k.center.x - len(k.type) / 2, k.center.y + 0.5, k.type)
+            axes_xc.append(k.center.x)
+            axes_yc.append(k.center.y)
+        line_flag = False
+        for i in self.coords_cal:
+            axes_t_xl.append(i.x / 100)
+            axes_t_yl.append(i.y / 100)
+        for i in self.coords_save:
+            axes_xs.append(i.x)
+            axes_ys.append(i.y)
+        for i in self.coords_sort:
+            axes_x.append(i.x / 100)
+            axes_y.append(i.y / 100)
+            if True:
+                if i.line == 1:
+                    line_flag = True
+                    axes_xl.append(i.x / 100)
+                    axes_yl.append(i.y / 100)
+                else:
+                    if line_flag:
+                        line_flag = False
+                        axes_xl.append(i.x / 100)
+                        axes_yl.append(i.y / 100)
+        plt.plot(axes_x, axes_y, 'ro')
+        plt.plot(axes_xc, axes_yc, 'g+')
+        plt.plot(axes_t_xl, axes_t_yl, 'bs')
+        plt.axis('equal')
+        plt.draw()
+        # plt.pause(0.1)
+        plt.ioff()
+        plt.show()
+
     def set_interface_data(self, interface_data_: InterfaceData):
         self.interface_data = interface_data_
 
@@ -82,12 +174,12 @@ class PcadConverter:
         point = this_directory.rfind("\\")
         this_directory = self.path_to_folder[:point]
 
-        file_path = call_file_picker()  # call window that allows to pick file
+        file_path = self.call_file_picker()  # call window that allows to pick file
         point = file_path.rfind("/") + 1
         input_file_name = file_path[point:]
         input_file = file_path
 
-        main_file_path = find_file_with_same_name(directory=this_directory, file_name=input_file_name)
+        main_file_path = self.find_file_with_same_name(directory=this_directory, file_name=input_file_name)
         if main_file_path == "":
             print("Нет файла импорта")
             input_file = ""
@@ -103,7 +195,6 @@ class PcadConverter:
             # ============================================================
             start_decode = False
             block_number = 0
-            strings = []
             str_blocks = ""
             for strFile in fin:
                 if start_decode:
@@ -294,8 +385,8 @@ class PcadConverter:
 
         coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
         # --------------------------------------------------------------
-        file_name_control = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
-        file_out_control = open(file_name_control, 'w')
+        self.file_name_control = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
+        file_out_control = open(self.file_name_control, 'w')
         file_out_control.write(";start control\n")
         file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
         file_out_control.write(f"d0:x{round(dot_max_t.x)}y{round(dot_max_t.y)}z0\n")
@@ -314,8 +405,8 @@ class PcadConverter:
         for i in range(len(coords_sort)):
             coords_sort[i].x = (coords_sort[i].x * 100)
             coords_sort[i].y = (coords_sort[i].y * 100)
-            if (coords_sort[i].line == self.interface_data.LINE_START) or \
-                    (coords_sort[i].line == self.interface_data.LINE_END):
+            if (coords_sort[i].line == Component.LINE_START) or \
+                    (coords_sort[i].line == Component.LINE_END):
                 prefix = "l"
             else:
                 prefix = "d" + str(coords_sort[i].line)
@@ -346,7 +437,7 @@ class PcadConverter:
         file_sd = self.get_drive()
         if self.interface_data.copy_to_sd_dispenser:
             if len(self.drives_rem) == 1:
-                shutil.copy(file_name_control, file_sd)
+                shutil.copy(self.file_name_control, file_sd)
                 shutil.copy(file_name_main, file_sd)
                 shutil.copy(file_name, file_sd)
                 shutil.copy(file_name, file_sd)
@@ -358,6 +449,9 @@ class PcadConverter:
 
     def create_chmt_files(self):
         split_count = 1
+        number_components = 0
+        number_auto = 0
+        number_decline = 0
         if self.interface_data.split_size_type:
             split_count = 2
         for split_file in range(split_count):
@@ -374,15 +468,15 @@ class PcadConverter:
                     mark_file = "b"
             else:
                 mark_file = ""
-            file_chmt_name = self.path_to_folder_output + self.interface_data.device_name + mark_file + ".csv"
-            file_out = open(file_chmt_name, 'w')
+            self.file_chmt_name = self.path_to_folder_output + self.interface_data.device_name + mark_file + ".csv"
+            file_out = open(self.file_chmt_name, 'w')
             # ---------------------- Origin offset ----------------------
             file_out.close()
-            file_out = open(file_chmt_name, 'ab')
+            file_out = open(self.file_chmt_name, 'ab')
             # FIRST_STRING = b'\x25\x2c\xd4\xad\xb5\xe3\xc6\xab\xd2\xc6'
             file_out.write(self.FIRST_STRING)
             file_out.close()
-            file_out = open(file_chmt_name, 'a')
+            file_out = open(self.file_chmt_name, 'a')
             file_out.write("\n")
             file_out.write("65535,0,")
             file_out.write("0")
@@ -396,11 +490,11 @@ class PcadConverter:
             # ---------------------- List of stacks ----------------------
             # c1cfd5bbc6abd2c6
             file_out.close()
-            file_out = open(file_chmt_name, 'ab')
+            file_out = open(self.file_chmt_name, 'ab')
             # SECOND_STRING = b'\x25\x2c\xc1\xcf\xd5\xbb\xc6\xab\xd2\xc6'
             file_out.write(self.SECOND_STRING)
             file_out.close()
-            file_out = open(file_chmt_name, 'a')
+            file_out = open(self.file_chmt_name, 'a')
             file_out.write("\n")
             feed_rate = 2
             for kat in self.interface_data.stacks:
@@ -428,11 +522,11 @@ class PcadConverter:
             # ---------------------- List of PCB ----------------------
             # c6b4b0e5312c58
             file_out.close()
-            file_out = open(file_chmt_name, 'ab')
+            file_out = open(self.file_chmt_name, 'ab')
             # THIRD_STRING = b'\x25\x2c\xc6\xb4\xb0\xe5\x31\x2c\x58'
             file_out.write(self.THIRD_STRING)
             file_out.close()
-            file_out = open(file_chmt_name, 'a')
+            file_out = open(self.file_chmt_name, 'a')
             file_out.write("\n")
             file_out.write("65535,")
             if self.interface_data.size_x * self.interface_data.size_y == 1:
@@ -445,16 +539,13 @@ class PcadConverter:
             # ---------------------- List of self.components ----------------------
             # ccf9cdb7bac5
             file_out.close()
-            file_out = open(file_chmt_name, 'ab')
+            file_out = open(self.file_chmt_name, 'ab')
             # FOURTH_STRING = b'\x25\x2c\xcc\xf9\xcd\xb7\xba\xc5'
             file_out.write(self.FOURTH_STRING)
             file_out.close()
-            file_out = open(file_chmt_name, 'a')
+            file_out = open(self.file_chmt_name, 'a')
             file_out.write("\n")
             # ----------------------------------------------------------------
-            number = 0
-            number_auto = 0
-            number_decline = 0
             head = 0
             stack = 0
             value = ""
@@ -530,19 +621,20 @@ class PcadConverter:
                     if prop_name == "SO8":
                         prop_name = prop_name
 
-                    cur_comp = Component(Point(x, y), angle, description, comment, prop_name, value)
+                    cur_comp = Component(Point(x, y), angle, description, comment, prop_name, value,
+                                         self.interface_data)
                     if cur_comp.type == "BAS40-06":
                         kek = 1
 
                     bool_str = "True"
                     if not cur_comp.error:
                         bool_str = "False"
-                    table_data.append([bool_str, str(number), str(head), str(cur_comp.stack),
+                    table_data.append([bool_str, str(number_components), str(head), str(cur_comp.stack),
                                        str(cur_comp.center.x), str(cur_comp.center.y),
                                        str(round(cur_comp.angle)), str(cur_comp.height),
                                        str(0), str(cur_comp.type), str(cur_comp.description), str(speed)])
                     found = False
-                    number += 1
+                    number_components += 1
                     if not cur_comp.error:
                         self.components.append(cur_comp)
                         found = True
@@ -614,59 +706,11 @@ class PcadConverter:
                     shutil.copy(file_chmt_name, file_sd)
 
             # self.PrintCustom("-------------------------------------------------------------------")
-        # self.PrintCustom(f"Катушки:")
-        for kat in self.interface_data.stacks:
-            if kat.number > 0:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}, {kat.value}","")
-                else:
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}","")
-                flag = 0
-                # self.PrintCustom("")
-                only_dot_flag = False
-                for com in self.components:
-                    kat_value = kat.value
-                    if kat_value.find("*") != -1:
-                        kat_value = kat_value.replace("*", "")
-                        only_dot_flag = True
-                    if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
-                        if not only_dot_flag:
-                            flag = 1
-                        else:
-                            flag = 2
-                        break
-                if flag == 0:
-                    # self.PrintCustom(" - не используется")
-                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
-                if flag == 1:
-                    # self.PrintCustom("")
-                    self.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
-                if flag == 2:
-                    # self.PrintCustom("Только паста")
-                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
-            else:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}, {kat.value}")
-                else:
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
-                self.stack_error = 2
-
-        if self.stack_error:
-            self.print_custom("-------------------------------------------------------------------")
-            if self.stack_error == 1:
-                self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
-            if self.stack_error == 2:
-                self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
-            self.print_custom("-------------------------------------------------------------------\n")
 
         # Container.PrintCustom_pretty_table(table_data)
 
         self.print_custom("-------------------------------")
-        self.print_custom(f"Количество компонентов - {number}")
+        self.print_custom(f"Количество компонентов - {number_components}")
         self.print_custom(f"Количество компонентов автоматической пайки - {number_auto}")
         self.print_custom(f"Количество необработанных компонентов - {number_decline}:")
         i = 0
@@ -712,8 +756,7 @@ class PcadConverter:
         return file_sd
 
     def read_options_file(self):
-        last_slash = self.interface_data.path_to_folder.rfind("\\")
-        path_to_folder = self.interface_data.path_to_folder[:last_slash + 1]
+        path_to_folder = get_path_to_folder()
         path_to_folder_output = path_to_folder[:-1]
         last_slash = path_to_folder_output.rfind("\\")
         path_to_folder_output = path_to_folder[:last_slash + 1]
@@ -770,12 +813,12 @@ class PcadConverter:
                     param_kat = [" ", " "]
                 smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
                 self.interface_data.stacks.append(smd_kat)
-                self.root.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i]
+        #                self.root.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i] TODO
         file_options.close()
 
     def create_options_file(self):
-        file_options_lines = [self.NUMBER_NAME + ") " + str(self.interface_data.device_name), NUMBER_SIZE_X + ") " +
-                              str(self.interface_data.size_x),
+        file_options_lines = [self.NUMBER_NAME + ") " + str(self.interface_data.device_name),
+                              self.NUMBER_SIZE_X + ") " + str(self.interface_data.size_x),
                               self.NUMBER_SIZE_Y + ") " + str(self.interface_data.size_y),
                               self.NUMBER_NUMBER_X + ") " + str(self.interface_data.devices_number_x),
                               self.NUMBER_NUMBER_Y + ") " + str(self.interface_data.devices_number_y),
@@ -799,17 +842,17 @@ class PcadConverter:
         self.path_to_file = self.path_to_folder + file_name
         self.create_chmt_files()
 
-        if self.interface_data.components:
+        if self.components:
             self.create_dispenser_files()
-            self.print_custom(f"Файл для станка CHM-T36:\n     {self.interface_data.file_chmt_name}\n")
-            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.interface_data.file_name_control}\n")
+            self.print_custom(f"Файл для станка CHM-T36:\n     {self.file_chmt_name}\n")
+            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.file_name_control}\n")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom("-------------------------------")
             random.seed()
 
             if self.interface_data.show_plot:
-                run_graph_builder()
+                self.run_graph_builder()
 
         self.create_options_file()
 
@@ -825,8 +868,11 @@ class Component:
     LINE_START = 8
     LINE_END = 9
 
-    def __init__(self, center, angle, description, comp_type, pattern_name, value):
+    def __init__(self, center, angle, description, comp_type, pattern_name, value, interface_data_):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.error = False
+        self.pins = None
+        self.interface_data = interface_data_
         self.center = center
         self.real_angle = angle
         self.angle = 90 + angle
@@ -840,6 +886,7 @@ class Component:
         self.stack = None
         self.sizeType = None
         self.height = None
+        self.ignore_rotation = False  # !!!!!!!! TODO
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.correct_values()
         self.correct_angles(angle)
@@ -933,7 +980,7 @@ class Component:
             self.pins.append(Point(3, -1, self.DOT_BIG))
             if self.angle > 90:
                 self.angle -= 180
-        if (ignore_rotation and (self.angle <= 90)) or not ignore_rotation:
+        if (self.ignore_rotation and (self.angle <= 90)) or not self.ignore_rotation:
             if (self.pattern_name == "SOD323") or (self.pattern_name == "LED_0805"):
                 self.pins.append(Point(-2.21 / 2, 0, self.DOT_SMALL))
                 self.pins.append(Point(2.21 / 2, 0, self.DOT_SMALL))
@@ -1062,7 +1109,7 @@ class Component:
         self.height = 0.5
         self.error = True
         self.sizeType = Smd.get_size_type(self.pattern_name)
-        for st in self.stacks:
+        for st in self.interface_data.stacks:
             st_value = st.value
             self.onlyPaste = False
             self.skip = 0
@@ -1086,109 +1133,9 @@ class Component:
                 self.error = True
             else:
                 for pin in self.pins:
-                    xz = self.center.x + pin.x * math.cos(self.real_angle * PI / 180) - \
-                         pin.y * math.sin(self.real_angle * PI / 180)
-                    yz = self.center.y + pin.x * math.sin(self.real_angle * PI / 180) + \
-                         pin.y * math.cos(self.real_angle * PI / 180)
+                    xz = self.center.x + pin.x * math.cos(self.real_angle * math.pi / 180) - \
+                         pin.y * math.sin(self.real_angle * math.pi / 180)
+                    yz = self.center.y + pin.x * math.sin(self.real_angle * math.pi / 180) + \
+                         pin.y * math.cos(self.real_angle * math.pi / 180)
                     pin.x = xz
                     pin.y = yz
-
-
-def input_pcad():
-    file_input = self.path_to_folder + "Input.txt"
-    file_out = open(file_input, 'w')
-    input_text = GuiAutomizer.pcad_reports()
-    # input_text = pyperclip.paste()
-    input_text = input_text.replace('\n', '')
-    print(input_text)
-    file_out.write(input_text)
-    file_out.close()
-
-
-def call_file_picker():
-    root = tk.Tk()
-    root.withdraw()
-    return filedialog.askopenfilename(filetypes=[("Correct file", ".csv")])
-
-
-def find_file_with_same_name(directory, file_name):
-    """
-    Find file in directory, that has same name with received
-    :param directory: in which directory search file
-    :param file_name: name of file that need to be found
-    :return: bool, file found
-    """
-    files = os.listdir(directory)
-    main_file_path = ""
-    for f in files:
-        if file_name.find(f) != -1:
-            main_file_path = directory + "\\" + f
-            break
-    return main_file_path != ""
-
-
-def run_graph_builder(self):
-    axes_x = []
-    axes_y = []
-    axes_xs = []
-    axes_ys = []
-    axes_xc = []
-    axes_yc = []
-    axes_xr = [0, 0]
-    axes_yr = [0, 0]
-    axes_xl = []
-    axes_yl = []
-    axes_t_xl = []
-    axes_t_yl = []
-    plt.ion()
-    for i in self.coords_sort:
-        if axes_xr[1] < i.x / 100:
-            axes_xr[1] = i.x / 100 + 5
-        if axes_yr[1] < i.y / 100:
-            axes_yr[1] = i.y / 100 + 5
-    for k in self.components:
-        if k.value != "":
-            plt.text(k.center.x - len(k.value) / 2, k.center.y + 0.5 + random.random(), k.value)
-        else:
-            plt.text(k.center.x - len(k.type) / 2, k.center.y + 0.5, k.type)
-        axes_xc.append(k.center.x)
-        axes_yc.append(k.center.y)
-    line_flag = False
-    for i in self.coords_cal:
-        axes_t_xl.append(i.x / 100)
-        axes_t_yl.append(i.y / 100)
-    for i in self.coords_save:
-        axes_xs.append(i.x)
-        axes_ys.append(i.y)
-    for i in self.coords_sort:
-        axes_x.append(i.x / 100)
-        axes_y.append(i.y / 100)
-        if True:
-            if i.line == 1:
-                line_flag = True
-                axes_xl.append(i.x / 100)
-                axes_yl.append(i.y / 100)
-            else:
-                if line_flag:
-                    line_flag = False
-                    axes_xl.append(i.x / 100)
-                    axes_yl.append(i.y / 100)
-    plt.plot(axes_x, axes_y, 'ro')
-    plt.plot(axes_xc, axes_yc, 'g+')
-    plt.plot(axes_t_xl, axes_t_yl, 'bs')
-    plt.axis('equal')
-    plt.draw()
-    # plt.pause(0.1)
-    plt.ioff()
-    plt.show()
-
-
-# ***********************************************************************
-# Запуск проекта
-if __name__ == "__main__":
-    threadExit = GuiAutomizer.MyThread("exit")
-    threadExit.start()
-    Gui_Kivy.init_window()
-    app = Gui_Kivy.DisplayApp()
-    app.run()
-# ***********************************************************************
