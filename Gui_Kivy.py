@@ -242,6 +242,6 @@ class DisplayApp(App):
 
     # Основной метод для построения программы
     def build(self):
-        self.load_kv('display.kv')
+        # self.load_kv('display.kv')
         self.cont = Container(self.converter)
         return self.cont  # self.cont
