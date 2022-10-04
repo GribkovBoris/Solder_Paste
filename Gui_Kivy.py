@@ -14,14 +14,17 @@ from kivy.core.window import Window
 from Solder_Paste import PcadConverter
 from Smd_Class import Smd
 from Interface_Data_Class import InterfaceData
+from win32api import GetSystemMetrics
 
 
 # ==================================================================
 def init_window(width, height):
     # Глобальные настройки
+    screen_width = GetSystemMetrics(0)
+    screen_height = GetSystemMetrics(1)
     Window.size = (width, height)
-    Window.top = 100
-    Window.left = 100
+    Window.left = (screen_width - width) / 2
+    Window.top = (screen_height - height) / 2
     Window.clear_color = (255 / 255, 186 / 255, 3 / 255, 1)
     Window.title = "Solder Paste"
 
@@ -49,6 +52,8 @@ class Container(BoxLayout):
 
     def raschet(self):
         self.converter.convert_pcad_to_files()
+        self.ll_out.text = '-----------------------\nВывод:\n-----------------------\n\n' + \
+                           self.converter.get_print_custom()
 
     def input_pcad(self):
         self.converter.input_pcad()
@@ -76,6 +81,8 @@ class Container(BoxLayout):
         self.cb_sd_chmt.active = self.interface_data.copy_to_sd_chmt
         self.cb_sd_dispenser.active = self.interface_data.copy_to_sd_dispenser
         self.cb_split_size.active = self.interface_data.split_size_type
+        for i in range(self.get_number_coils()):
+            self.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i]
 
     def read_gui(self):
         self.ll_out.text = ""
@@ -206,11 +213,12 @@ class DisplayApp(App):
         bl_kat_r = BoxLayout()
         bl_kat_r.orientation = "vertical"
         number_coils = self.cont.get_number_coils()
-        number_trays = self.cont.get_number_coils()
+        number_trays = self.cont.get_number_trays()
         for kat in range(number_coils):
             num = number_coils - kat - 1
             bl_kat = BoxLayout()
             bl_kat.orientation = "horizontal"
+            bl_kat.padding = (0, 0, 0, 2)
             text_str = "№" + str(num + 1)
             if kat < number_trays:
                 text_str = text_str + "(" + str(3 - kat) + ")"

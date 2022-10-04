@@ -52,8 +52,7 @@ class PcadConverter:
     # ***********************************************************************
 
     def __init__(self):
-        ignore_rotation = False  # TODO
-        use_only_one_head = False
+        self.components_fail = None
         self.path_to_folder = get_path_to_folder()
         self.path_to_folder_output = self.path_to_folder
         self.file_chmt_name = ""
@@ -434,18 +433,19 @@ class PcadConverter:
         file_input = self.path_to_folder + "input.txt"
         shutil.copy(file_input, file_input_name)
         # --------------------------------------------------------------
-        file_sd = self.get_drive()
         if self.interface_data.copy_to_sd_dispenser:
-            if len(self.drives_rem) == 1:
-                shutil.copy(self.file_name_control, file_sd)
-                shutil.copy(file_name_main, file_sd)
-                shutil.copy(file_name, file_sd)
-                shutil.copy(file_name, file_sd)
-            if len(self.drives_rem) == 0:
-                ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
-            if len(self.drives_rem) > 1:
-                ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл "
-                                                    u"не записан.", u"Ошибка", 0)
+            file_sd = self.get_drive()
+            if file_sd is not None:
+                if len(self.drives_rem) == 1:
+                    shutil.copy(self.file_name_control, file_sd)
+                    shutil.copy(file_name_main, file_sd)
+                    shutil.copy(file_name, file_sd)
+                    shutil.copy(file_name, file_sd)
+                if len(self.drives_rem) == 0:
+                    ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
+                if len(self.drives_rem) > 1:
+                    ctypes.windll.user32.MessageBoxW(0, u"Найдено больше одной SD-карты, оставьте нужную!\nФайл "
+                                                        u"не записан.", u"Ошибка", 0)
 
     def create_chmt_files(self):
         split_count = 1
@@ -546,42 +546,9 @@ class PcadConverter:
             file_out = open(self.file_chmt_name, 'a')
             file_out.write("\n")
             # ----------------------------------------------------------------
-            head = 0
-            stack = 0
-            value = ""
-            x = 0
-            y = 0
-            angle = 0
-            height = 0.5
             speed = 100
             head = 1
-            stack = 1
 
-            def print_pretty_table(data, cell_sep=' | ', header_separator=True):
-                rows = len(data)
-                cols = len(data[0])
-
-                col_width = []
-                for col in range(cols):
-                    columns = [data[row][col] for row in range(rows)]
-                    col_width.append(len(max(columns, key=len)))
-
-                separator = "-+-".join('-' * n for n in col_width)
-
-                for i, row in enumerate(range(rows)):
-                    if i == 1 and header_separator:
-                        self.print_custom(separator)
-
-                    result = []
-                    for col in range(cols):
-                        item = data[row][col].rjust(col_width[col])
-                        result.append(item)
-
-                    self.print_custom(cell_sep.join(result))
-
-            table_data = [
-                ['error', 'number', 'head', 'stack', 'x', 'y', 'angle', 'h', '0', 'type', 'description', 'speed']
-            ]
             self.components_fail = []
             # self.PrintCustom("k")
             searching_start = 1
@@ -603,8 +570,6 @@ class PcadConverter:
                         properties[i] = k
                         # self.PrintCustom(properties[i])
                         i += 1
-                    float(x)
-                    pos = 0
                     # RefDes,Name,Type,Value,Layer,X,Y,Rotation
                     description = properties[0]
                     prop_name = properties[1]
@@ -614,25 +579,10 @@ class PcadConverter:
                     x = float(properties[5])
                     y = float(properties[6])
                     angle = float(properties[7])
-                    if value == "104":
-                        value = "0.1"
-                    if prop_name == "TSSOP-20":
-                        prop_name = prop_name
-                    if prop_name == "SO8":
-                        prop_name = prop_name
 
                     cur_comp = Component(Point(x, y), angle, description, comment, prop_name, value,
                                          self.interface_data)
-                    if cur_comp.type == "BAS40-06":
-                        kek = 1
 
-                    bool_str = "True"
-                    if not cur_comp.error:
-                        bool_str = "False"
-                    table_data.append([bool_str, str(number_components), str(head), str(cur_comp.stack),
-                                       str(cur_comp.center.x), str(cur_comp.center.y),
-                                       str(round(cur_comp.angle)), str(cur_comp.height),
-                                       str(0), str(cur_comp.type), str(cur_comp.description), str(speed)])
                     found = False
                     number_components += 1
                     if not cur_comp.error:
@@ -692,43 +642,37 @@ class PcadConverter:
                         self.components_fail.append(cur_comp)
             file_out.close()
             fin.close()
-            file_sd = self.get_drive()
             # print(len(self.drives_rem))
-            if self.interface_data.copy_to_sd_chmt and file_sd is not None:
-                if not self.interface_data.split_size_type:
-                    shutil.copy(file_chmt_name, file_sd)
-                else:
-                    file_chmt_name = self.interface_data.path_to_folder_output + \
-                                     self.interface_data.device_name + "s" + ".csv"
-                    shutil.copy(file_chmt_name, file_sd)
-                    file_chmt_name = self.interface_data.path_to_folder_output + \
-                                     self.interface_data.device_name + "b" + ".csv"
-                    shutil.copy(file_chmt_name, file_sd)
+            if self.interface_data.copy_to_sd_chmt:
+                file_sd = self.get_drive()
+                if file_sd is not None:
+                    if not self.interface_data.split_size_type:
+                        shutil.copy(file_chmt_name, file_sd)
+                    else:
+                        file_chmt_name = self.interface_data.path_to_folder_output + \
+                                         self.interface_data.device_name + "s" + ".csv"
+                        shutil.copy(file_chmt_name, file_sd)
+                        file_chmt_name = self.interface_data.path_to_folder_output + \
+                                         self.interface_data.device_name + "b" + ".csv"
+                        shutil.copy(file_chmt_name, file_sd)
 
-            # self.PrintCustom("-------------------------------------------------------------------")
-
-        # Container.PrintCustom_pretty_table(table_data)
 
         self.print_custom("-------------------------------")
         self.print_custom(f"Количество компонентов - {number_components}")
         self.print_custom(f"Количество компонентов автоматической пайки - {number_auto}")
         self.print_custom(f"Количество необработанных компонентов - {number_decline}:")
+
         i = 0
         type_unique = []
         value_unique = []
         for k in self.components_fail:
-            allow_adding = False
-            # self.PrintCustom("+++++++++++++++++++++++++")
-            # self.PrintCustom(len(type_unique))
             if len(type_unique) == 0:
                 allow_adding = True
             else:
-                kk = 0
                 allow_adding = True
                 for kk in range(len(type_unique)):
                     if (k.type == type_unique[kk]) and (k.value == value_unique[kk]):
                         allow_adding = False
-            # allow_adding = True
             if allow_adding:
                 type_unique.append(k.type)
                 value_unique.append(k.value)
@@ -768,35 +712,35 @@ class PcadConverter:
         file_options_lines = file_options.readlines()
         for str_input in file_options_lines:
             if str_input[0] == self.NUMBER_NAME:
-                device_name = str_input[3:-1]
+                self.interface_data.device_name = str_input[3:-1]
             if str_input[0] == self.NUMBER_SIZE_X:
-                size_x = float(str_input[3:-1])
+                self.interface_data.size_x = float(str_input[3:-1])
             if str_input[0] == self.NUMBER_SIZE_Y:
-                size_y = float(str_input[3:-1])
+                self.interface_data.size_y = float(str_input[3:-1])
             if str_input[0] == self.NUMBER_NUMBER_X:
-                devices_number_x = int(str_input[3:-1])
+                self.interface_data.devices_number_x = int(str_input[3:-1])
             if str_input[0] == self.NUMBER_NUMBER_Y:
-                devices_number_y = int(str_input[3:-1])
+                self.interface_data.devices_number_y = int(str_input[3:-1])
             if str_input[0] == self.NUMBER_SPLIT_SIZE:
                 if str_input.find("False") != -1:
-                    split_size_type = False
+                    self.interface_data.split_size_type = False
                 else:
-                    split_size_type = True
+                    self.interface_data.split_size_type = True
             if str_input[0] == self.NUMBER_SHOW_PLOT:
                 if str_input.find("False") != -1:
-                    show_plot = False
+                    self.interface_data.show_plot = False
                 else:
-                    show_plot = True
+                    self.interface_data.show_plot = True
             if str_input[0] == self.NUMBER_SD_CHMT:
                 if str_input.find("False") != -1:
-                    copy_to_sd_chmt = False
+                    self.interface_data.copy_to_sd_chmt = False
                 else:
-                    copy_to_sd_chmt = True
+                    self.interface_data.copy_to_sd_chmt = True
             if str_input[0] == self.NUMBER_SD_DISPENSER:
                 if str_input.find("False") != -1:
-                    copy_to_sd_dispenser = False
+                    self.interface_data.copy_to_sd_dispenser = False
                 else:
-                    copy_to_sd_dispenser = True
+                    self.interface_data.copy_to_sd_dispenser = True
             if str_input[0] == "k":
                 pos = str_input.find(")")
                 i = int(str_input[1:pos]) - 1
@@ -813,7 +757,6 @@ class PcadConverter:
                     param_kat = [" ", " "]
                 smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
                 self.interface_data.stacks.append(smd_kat)
-        #                self.root.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i] TODO
         file_options.close()
 
     def create_options_file(self):
@@ -849,15 +792,18 @@ class PcadConverter:
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
             self.print_custom("-------------------------------")
-            random.seed()
 
+            random.seed()
             if self.interface_data.show_plot:
                 self.run_graph_builder()
 
         self.create_options_file()
 
     def print_custom(self, param):
-        self.out_text += param
+        self.out_text += param + "\n"
+
+    def get_print_custom(self):
+        return self.out_text
 
 
 # ***********************************************************************
@@ -910,6 +856,8 @@ class Component:
             self.angle -= 360
 
     def correct_values(self):
+        if self.value == "104":
+            self.value = "0.1"
         if (self.pattern_name.find("TLP521") != -1) or (self.value.find("TLP521") != -1) or \
                 (self.description.find("TLP521") != -1) or (self.pattern_name.find("K1010") != -1) or \
                 (self.value.find("K1010") != -1) or (self.description.find("K1010") != -1):

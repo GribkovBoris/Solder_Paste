@@ -3,6 +3,26 @@
     valign: 'middle'
     text_size: self.size
 
+<Button>:
+    background_color: (1.0, 0.6, 0.4, 1.0)
+
+<CheckBox>:
+    color: (1, 1, 1, 1.0)
+    background_color: (1.0, 1.0, 1.0, 1.0)
+    canvas.before:
+        Color:
+            rgb: 1,1,0
+        Rectangle:
+            pos:self.center_x-9, self.center_y-9
+            size:[18,18]
+        Color:
+            rgb: 0.7,0.5,0.1
+        Rectangle:
+            pos:self.center_x-7, self.center_y-7
+            size:[14,14]
+    size_hint:(.1,1)
+
+
 <Container>
     ti_size_x: ti_size_x
     ti_size_y: ti_size_y
@@ -15,6 +35,14 @@
     cb_split_size: cb_split_size
     bl_coils: bl_coils
     ll_out: ll_out
+
+    canvas.before:
+        Color:
+            rgba: (155 / 255, 86 / 255, 3 / 255, 1)
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
     BoxLayout:
         spacing: 20
         orientation:'horizontal'
@@ -24,13 +52,13 @@
             padding: [5,10,5,10]
             Label:
                 text:'Катушки'
-                size_hint:(1,.2)
+                size_hint:(1,0.12)
             BoxLayout:
                 id: bl_coils
                 size_hint:(1,1.3)
             BoxLayout:
                 orientation:'vertical'
-                size_hint:(1,0.6)
+                size_hint:(1,0.3)
                 Label:
                     text:'SOD80_S - диод'
                 Label:
@@ -49,14 +77,6 @@
             BoxLayout:
                 size_hint:(1,.8)
                 orientation:'vertical'
-                Label:
-                    text:'Проверь, что входной файл такого типа:'
-                Label:
-                    text:'"RefDes","Pattern","Type","Value","Layer","LocX","LocY","Rotation"'
-                Label:
-                    text:'"C3","0805","C0805","0.1","Top","58.786","7.018","270.0"'
-                Label:
-                    text:'\nПри работе с PCAD, нужно сначала открыть\nнужный файл в PCAD и переключить окно на это.'
             BoxLayout:
                 orientation:'vertical'
                 size_hint:(1,.8)
@@ -141,24 +161,22 @@
                     orientation:'horizontal'
                     CheckBox:
                         id:cb_chart
-                        color:.294, .761, .623
-                        size_hint:(.1,1)
                     CheckLabel:
                         text: "График"
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
                         id:cb_sd_chmt
-                        color:.294, .761, .623
-                        size_hint:(.1,1)
+                        on_active:
+                            cb_sd_dispenser.active = False
                     CheckLabel:
                         text: "Копировать на SD карту CHMT"
                 BoxLayout:
                     orientation:'horizontal'
                     CheckBox:
                         id:cb_sd_dispenser
-                        color:.294, .761, .623
-                        size_hint:(.1,1)
+                        on_active:
+                            cb_sd_chmt.active = False
                     CheckLabel:
                         text: "Копировать на SD карту Дозатор"
                 BoxLayout:
