@@ -56,7 +56,9 @@ class PcadConverter:
         self.path_to_folder = get_path_to_folder()
         self.path_to_folder_output = self.path_to_folder
         self.file_chmt_name = ""
-        self.file_name_control = ""
+        self.file_dispenser_name_control = ""
+        self.file_dispenser_name_main = ""
+        self.file_dispenser_name_size = ""
         self.components = []
         self.out_text = ""
         self.interface_data = None
@@ -73,6 +75,7 @@ class PcadConverter:
         self.chmtx_coef = 1.0
         self.chmty_coef = 1.0
         self.path_to_file = ""
+        self.coords_cal = None
 
     @staticmethod
     def input_pcad():
@@ -108,7 +111,6 @@ class PcadConverter:
                 break
         return main_file_path != ""
 
-    @staticmethod
     def run_graph_builder(self):
         axes_x = []
         axes_y = []
@@ -288,17 +290,17 @@ class PcadConverter:
         # --------------------------------------------------------------
         # Coord ged and mux coeff
         coords = []
-        coords_save = []
+        self.coords_save = []
         for com in self.components:
             for coord in com.pins:
                 coords.append(coord)
         for com in coords:
-            coords_save.append(com)
+            self.coords_save.append(com)
         # --------------------------------------------------------------
         self.print_custom(f"Количество точек - {len(coords)}")
         self.print_custom("-------------------------------")
         # --------------------------------------------------------------
-        coords_sort = []
+        self.coords_sort = []
 
         index_min = 0
 
@@ -316,7 +318,7 @@ class PcadConverter:
         self.print_custom(f"")
 
         dot = Point(dot_min.x, dot_min.y, dot_min.line)
-        coords_sort.append(dot)
+        self.coords_sort.append(dot)
         coords.pop(index_min)
         # --------------------------------------------------------------
         cnt = 0
@@ -326,52 +328,52 @@ class PcadConverter:
             min_len_index = 0
             for i in range(len(coords)):
                 # if(coords[i].line != LINE_END):
-                lenq = math.sqrt(math.pow((coords[i].x - coords_sort[-1].x), 2) +
-                                 math.pow((coords[i].y - coords_sort[-1].y), 2))
+                lenq = math.sqrt(math.pow((coords[i].x - self.coords_sort[-1].x), 2) +
+                                 math.pow((coords[i].y - self.coords_sort[-1].y), 2))
                 if (min_len == 0) or (min_len > lenq):
                     min_len = lenq
                     min_len_index = i
 
             qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
-            coords_sort.append(qdot)
+            self.coords_sort.append(qdot)
             coords.pop(min_len_index)
             if qdot.line == Component.LINE_START:
                 qdot = Point(coords[min_len_index].x, coords[min_len_index].y, coords[min_len_index].line)
-                coords_sort.append(qdot)
+                self.coords_sort.append(qdot)
                 coords.pop(min_len_index)
             else:
                 if qdot.line == Component.LINE_END:
                     qdot = Point(coords[min_len_index - 1].x, coords[min_len_index - 1].y,
                                  coords[min_len_index - 1].line)
-                    coords_sort.append(qdot)
+                    self.coords_sort.append(qdot)
                     coords.pop(min_len_index - 1)
         # --------------------------------------------------------------
-        board_x = 0
-        board_y = 0
-        coords_num = len(coords_sort)
+        coords_num = len(self.coords_sort)
         for board_x in range(self.interface_data.devices_number_x):
             for board_y in range(self.interface_data.devices_number_y):
                 if (board_x > 0) or (board_y > 0):
                     for coord in range(coords_num):
-                        qdot = Point(coords_sort[coord].x + self.interface_data.size_x * board_x,
-                                     coords_sort[coord].y + self.interface_data.size_y * board_y,
-                                     coords_sort[coord].line)
-                        coords_sort.append(qdot)
+                        qdot = Point(self.coords_sort[coord].x + self.interface_data.size_x * board_x,
+                                     self.coords_sort[coord].y + self.interface_data.size_y * board_y,
+                                     self.coords_sort[coord].line)
+                        self.coords_sort.append(qdot)
         # --------------------------------------------------------------
         if True:
             dot_max = Point(0, 0)
             len_max = 0.0
-            for i in range(0, len(coords_sort) - 1):
-                lenq = math.sqrt(math.pow(coords_sort[i].x, 2) + math.pow(coords_sort[i].y, 2))
+            for i in range(0, len(self.coords_sort) - 1):
+                lenq = math.sqrt(math.pow(self.coords_sort[i].x, 2) + math.pow(self.coords_sort[i].y, 2))
                 if (len_max == 0.0) or (len_max < lenq):
                     len_max = lenq
-                    dot_max.x = coords_sort[i].x
-                    dot_max.y = coords_sort[i].y
+                    dot_max.x = self.coords_sort[i].x
+                    dot_max.y = self.coords_sort[i].y
 
         dot_max_b = Point(dot_max.x,
                           dot_max.y - (self.interface_data.devices_number_y - 1) * self.interface_data.size_y)
         dot_max_t = Point(dot_min.x,
                           dot_min.y + (self.interface_data.devices_number_y - 1) * self.interface_data.size_y)
+
+        self.coords_cal = [dot_min, dot_max, dot_max_t, dot_max_b]
 
         dot_min.x = dot_min.x * 100
         dot_min.y = dot_min.y * 100
@@ -382,49 +384,49 @@ class PcadConverter:
         dot_max_b.x = dot_max_b.x * 100
         dot_max_b.y = dot_max_b.y * 100
 
-        coords_cal = [dot_min, dot_max_t, dot_max, dot_max_b]
         # --------------------------------------------------------------
-        self.file_name_control = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
-        file_out_control = open(self.file_name_control, 'w')
-        file_out_control.write(";start control\n")
-        file_out_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
-        file_out_control.write(f"d0:x{round(dot_max_t.x)}y{round(dot_max_t.y)}z0\n")
-        file_out_control.write(f"d0:x{round(dot_max.x)}y{round(dot_max.y)}z0\n")
-        file_out_control.write(f"d0:x{round(dot_max_b.x)}y{round(dot_max_b.y)}z0\n")
-        file_out_control.write(f"d0:x0y0z0\n")
-        file_out_control.write(";end\n")
-        file_out_control.write(";m2")
-        file_out_control.close()
+        # --------- Dispenser file output ------------------------------
         # --------------------------------------------------------------
-        file_name_main = self.path_to_folder_output + self.interface_data.device_name + ".nc"
-        file_code = open(file_name_main, 'w')
+        self.file_dispenser_name_main = self.path_to_folder_output + self.interface_data.device_name + ".nc"
+        file_dispenser_main = open(self.file_dispenser_name_main, 'w')
         # --------------------------------------------------------------
-        file_code.write(";start\n")
+        file_dispenser_main.write(";start main\n")
         # --------------------------------------------------------------
-        for i in range(len(coords_sort)):
-            coords_sort[i].x = (coords_sort[i].x * 100)
-            coords_sort[i].y = (coords_sort[i].y * 100)
-            if (coords_sort[i].line == Component.LINE_START) or \
-                    (coords_sort[i].line == Component.LINE_END):
+        for i in range(len(self.coords_sort)):
+            self.coords_sort[i].x = (self.coords_sort[i].x * 100)
+            self.coords_sort[i].y = (self.coords_sort[i].y * 100)
+            if (self.coords_sort[i].line == Component.LINE_START) or \
+                    (self.coords_sort[i].line == Component.LINE_END):
                 prefix = "l"
             else:
-                prefix = "d" + str(coords_sort[i].line)
-            file_code.write(f"{prefix}:x{round(coords_sort[i].x)}y{round(coords_sort[i].y)}z0\n")
-            # self.PrintCustom(f"{prefix}:{coords_sort[i].x},{coords_sort[i].y}")
+                prefix = "d" + str(self.coords_sort[i].line)
+            file_dispenser_main.write(f"{prefix}:x{round(self.coords_sort[i].x)}y{round(self.coords_sort[i].y)}z0\n")
         # --------------------------------------------------------------
-        file_code.write(f"d0:x0y0z0\n")
-        file_code.write(";end\n")
-        file_code.write(";m2")
-        file_code.close()
+        file_dispenser_main.write(f"d0:x0y0z0\n")
+        file_dispenser_main.write(";end\n")
+        file_dispenser_main.write(";m2")
+        file_dispenser_main.close()
         # --------------------------------------------------------------
-        file_name = self.path_to_folder_output + self.interface_data.device_name + "x.nc"
-        file_code = open(file_name, 'w')
+        self.file_dispenser_name_size = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
+        file_dispenser_size = open(self.file_dispenser_name_size, 'w')
+        file_dispenser_size.write(";start size\n")
+        file_dispenser_size.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
+        file_dispenser_size.write(f"d0:x{round(dot_max_t.x)}y{round(dot_max_t.y)}z0\n")
+        file_dispenser_size.write(f"d0:x{round(dot_max.x)}y{round(dot_max.y)}z0\n")
+        file_dispenser_size.write(f"d0:x{round(dot_max_b.x)}y{round(dot_max_b.y)}z0\n")
+        file_dispenser_size.write(f"d0:x0y0z0\n")
+        file_dispenser_size.write(";end\n")
+        file_dispenser_size.write(";m2")
+        file_dispenser_size.close()
         # --------------------------------------------------------------
-        file_code.write(";start control\n")
-        file_code.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
-        file_code.write(";end\n")
-        file_code.write(";m2")
-        file_code.close()
+        self.file_dispenser_name_control = self.path_to_folder_output + self.interface_data.device_name + "x.nc"
+        file_dispenser_control = open(self.file_dispenser_name_control, 'w')
+        # --------------------------------------------------------------
+        file_dispenser_control.write(";start control\n")
+        file_dispenser_control.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
+        file_dispenser_control.write(";end\n")
+        file_dispenser_control.write(";m2")
+        file_dispenser_control.close()
         # self.PrintCustom("-------------------------------")
 
         # --------------------------------------------------------------
@@ -437,10 +439,9 @@ class PcadConverter:
             file_sd = self.get_drive()
             if file_sd is not None:
                 if len(self.drives_rem) == 1:
-                    shutil.copy(self.file_name_control, file_sd)
-                    shutil.copy(file_name_main, file_sd)
-                    shutil.copy(file_name, file_sd)
-                    shutil.copy(file_name, file_sd)
+                    shutil.copy(self.file_dispenser_name_control, file_sd)
+                    shutil.copy(self.file_dispenser_name_main, file_sd)
+                    shutil.copy(self.file_dispenser_name_size, file_sd)
                 if len(self.drives_rem) == 0:
                     ctypes.windll.user32.MessageBoxW(0, u"Не найдена SD-карта!\nФайл не записан.", u"Ошибка", 0)
                 if len(self.drives_rem) > 1:
@@ -647,6 +648,8 @@ class PcadConverter:
                 file_sd = self.get_drive()
                 if file_sd is not None:
                     if not self.interface_data.split_size_type:
+                        file_chmt_name = self.interface_data.path_to_folder_output + \
+                                         self.interface_data.device_name + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
                     else:
                         file_chmt_name = self.interface_data.path_to_folder_output + \
@@ -655,7 +658,6 @@ class PcadConverter:
                         file_chmt_name = self.interface_data.path_to_folder_output + \
                                          self.interface_data.device_name + "b" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
-
 
         self.print_custom("-------------------------------")
         self.print_custom(f"Количество компонентов - {number_components}")
@@ -787,10 +789,11 @@ class PcadConverter:
 
         if self.components:
             self.create_dispenser_files()
-            self.print_custom(f"Файл для станка CHM-T36:\n     {self.file_chmt_name}\n")
-            self.print_custom(f"Файл для дозатора (калибровочный):\n     {self.file_name_control}\n")
-            self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
-            self.print_custom(f"Файл для дозатора (основной):\n     {file_name}")
+            self.print_custom("-------------------------------")
+            self.print_custom(f"Файл станка CHM-T36:\n     {self.file_chmt_name}")
+            self.print_custom(f"Файл дозатора (основной):\n     {self.file_dispenser_name_main}")
+            self.print_custom(f"Файл дозатора (настройка начала):\n     {self.file_dispenser_name_control}")
+            self.print_custom(f"Файл дозатора (настройка угла):\n     {self.file_dispenser_name_size}")
             self.print_custom("-------------------------------")
 
             random.seed()

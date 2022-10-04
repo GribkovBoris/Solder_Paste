@@ -50,10 +50,6 @@ class Container(BoxLayout):
         self.interface_data = InterfaceData()
         self.converter.set_interface_data(self.interface_data)
 
-    def raschet(self):
-        self.converter.convert_pcad_to_files()
-        self.ll_out.text = '-----------------------\nВывод:\n-----------------------\n\n' + \
-                           self.converter.get_print_custom()
 
     def input_pcad(self):
         self.converter.input_pcad()
@@ -70,6 +66,42 @@ class Container(BoxLayout):
     def print_custom(self, text, end="\n"):
         self.ll_out.text += text + end
         pass
+
+    def refresh_gui_coils_colors(self):
+        for kat in self.interface_data.stacks:
+            if kat.number > 0:
+                if kat.value != "":
+                    pass
+                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.patternName}, {kat.value}","")
+                else:
+                    pass
+                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.patternName}","")
+                flag = 0
+                only_dot_flag = False
+                for com in self.converter.components:
+                    kat_value = kat.value
+                    if kat_value.find("*") != -1:
+                        kat_value = kat_value.replace("*", "")
+                        only_dot_flag = True
+                    if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
+                        if not only_dot_flag:
+                            flag = 1
+                        else:
+                            flag = 2
+                        break
+                if flag == 0:
+                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
+                if flag == 1:
+                    self.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
+                if flag == 2:
+                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
+            else:
+                if kat.value != "":
+                    pass
+                    # self.PrintCustom(f"Вручную -\t{kat.patternName}, {kat.value}")
+                else:
+                    pass
+                    # self.PrintCustom(f"Вручную -\t{kat.patternName}")
 
     def refresh_gui(self):
         self.ti_device_name.text = self.interface_data.device_name
@@ -108,13 +140,13 @@ class Container(BoxLayout):
         else:
             self.interface_data.split_size_type = False
 
-        if self.devices_number_x == 0:
+        if self.interface_data.devices_number_x == 0:
             self.interface_data.devices_number_x = 1
-        if self.devices_number_y == 0:
+        if self.interface_data.devices_number_y == 0:
             self.interface_data.devices_number_y = 1
         # print(self.ids)
         for kat in range(self.interface_data.NUMBER_COILS):
-            self.interface_data.coils[kat] = self.root.ids[str("kat" + str(kat + 1))].text
+            self.interface_data.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
             coil = self.interface_data.coils[kat].split()
             if len(coil) == 2:
                 self.interface_data.stacks[kat].value = coil[1]
@@ -195,6 +227,9 @@ class Container(BoxLayout):
         self.print_custom("\n")
         self.read_gui()
         self.converter.convert_pcad_to_files()
+        self.ll_out.text = '-----------------------\nВывод:\n-----------------------\n\n' + \
+                           self.converter.get_print_custom()
+        self.refresh_gui_coils_colors()
 
 
 class DisplayApp(App):
