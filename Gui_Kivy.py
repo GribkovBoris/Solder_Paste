@@ -4,12 +4,16 @@ import shutil
 from tkinter import filedialog
 import tkinter as tk
 from kivy.app import App
+from kivy.clock import Clock
+from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
+from kivy.uix.dropdown import DropDown
 # ==================================================================
 from Solder_Paste import PcadConverter
 from Smd_Class import Smd
@@ -43,13 +47,13 @@ class Container(BoxLayout):
     b_input_pcad = ObjectProperty()
     cb_split_size = ObjectProperty()
     b_input_saved = ObjectProperty()
+    fl_main = ObjectProperty()
 
     def __init__(self, conv: PcadConverter, **kwargs):
         super().__init__(**kwargs)
         self.converter = conv
         self.interface_data = InterfaceData()
         self.converter.set_interface_data(self.interface_data)
-
 
     def input_pcad(self):
         self.converter.input_pcad()
@@ -151,7 +155,7 @@ class Container(BoxLayout):
             if len(coil) == 2:
                 self.interface_data.stacks[kat].value = coil[1]
                 self.interface_data.stacks[kat].pattern_name = coil[0]
-                Smd.get_height(self.interface_data.stacks[kat])
+                Smd.get_height(self.interface_data.stacks[kat].pattern_name)
 
     def coils_fields_color(self):
         stack_error = 0
@@ -242,6 +246,60 @@ class DisplayApp(App):
         self.interface_data = InterfaceData()
         self.converter.set_interface_data(self.interface_data)
 
+    def remove_bubble_widget(self):
+        try:
+            self.root.ids["fl_main"].remove_widget(self.root.ids["bubble_id"])
+        except:
+            pass
+
+    def bubble_button_press(self, obj):
+        id_str = obj.id
+        id_str = id_str.replace("bb", "")
+        id_str = id_str.replace("btddKat", " ")
+        data_arr = id_str.split(" ")
+        bubble_button_number = data_arr[0]
+        kat_number = data_arr[1]
+        print(data_arr)
+        # self.root.ids["bubble_id"].
+        # self.cont.remove_widget(self.btn)
+        Clock.schedule_once(lambda dt: self.remove_bubble_widget(), 0.1)
+        if bubble_button_number == '1':
+            self.cont.ids["kat" + kat_number].background_color = (1, 1, 0, 1)
+        if bubble_button_number == '2':
+            self.cont.ids["kat" + kat_number].background_color = (0, 0.4, 0, 1)
+        if bubble_button_number == '3':
+            self.cont.ids["kat" + kat_number].background_color = (0.4, 0.4, 0.4, 1)
+
+    # Defining the function to show the bubble
+    def show_bubble(self, obj):
+        # Creating bubble
+        size_x = 270
+        size_y = 60
+        self.remove_bubble_widget()
+        bubble = Bubble(size_hint=(None, None), size=(size_x, size_y),
+                        top=obj.top + size_y / 2 + size_y / 6, right=obj.right + size_x / 2 + size_x / 5)
+        bubble.id = "bubble_id"
+        bubble.background_color = (1, 1, 1, 1)
+        # creating bubble buttons
+        button1 = BubbleButton(text="Полный", size_hint=(0.3, 1))
+        button1.id = "bb1" + obj.id
+        button1.bind(on_press=self.bubble_button_press)
+        button2 = BubbleButton(text="Паста", size_hint=(0.3, 1))
+        button2.id = "bb2" + obj.id
+        button2.bind(on_press=self.bubble_button_press)
+        button3 = BubbleButton(text="Игнорировать", size_hint=(0.4, 1))
+        button3.id = "bb3" + obj.id
+        button3.bind(on_press=self.bubble_button_press)
+
+        # adding buttons to the bubble
+        bubble.add_widget(button1)
+        bubble.add_widget(button2)
+        bubble.add_widget(button3)
+
+        # adding bubble
+        self.root.ids[bubble.id] = bubble
+        self.cont.fl_main.add_widget(bubble)
+
     def on_start(self):
         bl_kat_l = BoxLayout()
         bl_kat_l.orientation = "vertical"
@@ -258,7 +316,7 @@ class DisplayApp(App):
             if kat < number_trays:
                 text_str = text_str + "(" + str(3 - kat) + ")"
             kat_label = Label(text=text_str)
-            kat_text_input = TextInput(hint_text="1")
+            kat_text_input = TextInput(hint_text="1", size_hint=(0.9, 1))
             kat_text_input.id = "kat" + str(num + 1)
             self.root.ids[kat_text_input.id] = kat_text_input
             kat_text_input.size_hint = (2, 1)
@@ -266,9 +324,17 @@ class DisplayApp(App):
             cb_enable = CheckBox(active=True)
             cb_enable.id = "enKat" + str(num + 1)
             cb_enable.color = (1, 0, 1, 1)
+
+            main_button = Button(text='...', size_hint=(0.4, 1))
+            main_button.bind(on_press=self.show_bubble)
+            main_button.background_color = (1, 0.6, 0.1, 1)
+            main_button.id = "btddKat" + str(num + 1)
+            self.root.ids[main_button.id] = main_button
+
             bl_kat.add_widget(kat_label)
-            # bl_kat.add_widget(cb_enable)
+            bl_kat.add_widget(main_button)
             bl_kat.add_widget(kat_text_input)
+            # bl_kat.add_widget(cb_enable)
             if num % 2:
                 bl_kat_r.add_widget(bl_kat)
             else:
@@ -278,6 +344,8 @@ class DisplayApp(App):
         self.root.bl_coils.orientation = "horizontal"
         self.cont.bl_coils.add_widget(bl_kat_l)
         self.cont.bl_coils.add_widget(bl_kat_r)
+
+        # self.cont.bl_coils.add_widget(main_button)
 
         self.converter.read_options_file()
 

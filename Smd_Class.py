@@ -37,7 +37,7 @@ class Smd:
         try:
             param = Smd.smdParams[pattern_name][param_number]
         except LookupError:
-            print("Компонент не найден в библиотеке")
+            print("Компонент не найден в библиотеке: ", pattern_name)
         return param
 
     @staticmethod

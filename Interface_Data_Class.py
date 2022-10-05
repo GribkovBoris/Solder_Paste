@@ -1,4 +1,3 @@
-
 class InterfaceData:
     NUMBER_COILS = 32
     NUMBER_TRAYS = 3
