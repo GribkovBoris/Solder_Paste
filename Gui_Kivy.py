@@ -19,6 +19,7 @@ from kivy.uix.dropdown import DropDown
 from Solder_Paste import PcadConverter
 from Smd_Class import Smd
 from Interface_Data_Class import InterfaceData
+from Interface_Data_Class import Coil
 from win32api import GetSystemMetrics
 
 
@@ -86,7 +87,7 @@ class Container(BoxLayout):
                 only_dot_flag = False
                 if kat.usage != 2:
                     for com in self.converter.components:
-                        if kat.value.usage == 1:
+                        if kat.usage == 1:
                             only_dot_flag = True
                         if (com.pattern_name == kat.pattern_name) and (com.value == kat.value):
                             if not only_dot_flag:
@@ -157,24 +158,28 @@ class Container(BoxLayout):
         # print(self.ids)
         for kat in range(self.interface_data.NUMBER_COILS):
             self.interface_data.coils[kat].pattern_name = self.ids[str("katPattern" + str(kat + 1))].text
-            self.interface_data.coils[kat].value = self.ids[str("katPattern" + str(kat + 1))].text
-            self.interface_data.stacks[kat].value = self.interface_data.coils[kat].value
+            self.interface_data.coils[kat].value = self.ids[str("katValue" + str(kat + 1))].text
             self.interface_data.stacks[kat].pattern_name = self.interface_data.coils[kat].pattern_name
+            self.interface_data.stacks[kat].value = self.interface_data.coils[kat].value
             Smd.get_height(self.interface_data.stacks[kat].pattern_name)
 
     def coil_field_color(self, kat_number, usage):
-        if usage == 0:  # not using
-            # self.PrintCustom(" - не используется")
-            self.root.ids["katPattern" + str(kat_number)].background_color = [0.7, 0, 0.1, 1]
-            self.root.ids["katValue" + str(kat_number)].background_color = [0.7, 0, 0.1, 1]
-        if usage == 1:  # full use
+        usage = int(usage)
+        if usage == 0:  # full use
             # self.PrintCustom("")
-            self.root.ids["katPattern" + str(kat_number)].background_color = [0, 1, 0, 1]
-            self.root.ids["katValue" + str(kat_number)].background_color = [0, 1, 0, 1]
-        if usage == 2:  # paste only
+            self.ids["katPattern" + str(kat_number)].background_color = Coil.USAGE_FULL_TEXT_FIELD_COLOR
+            self.ids["katValue" + str(kat_number)].background_color = Coil.USAGE_FULL_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].text = Coil.USAGE_FULL_BUTTON_TEXT
+        if usage == 1:  # paste only
             # self.PrintCustom("Только паста")
-            self.root.ids["katPattern" + str(kat_number)].background_color = [0.7, 0.6, 0.1, 1]
-            self.root.ids["katValue" + str(kat_number)].background_color = [0.7, 0.6, 0.1, 1]
+            self.ids["katPattern" + str(kat_number)].background_color = Coil.USAGE_PASTE_TEXT_FIELD_COLOR
+            self.ids["katValue" + str(kat_number)].background_color = Coil.USAGE_PASTE_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].text = Coil.USAGE_PASTE_BUTTON_TEXT
+        if usage == 2:  # not using
+            # self.PrintCustom(" - не используется")
+            self.ids["katPattern" + str(kat_number)].background_color = Coil.USAGE_IGNORE_TEXT_FIELD_COLOR
+            self.ids["katValue" + str(kat_number)].background_color = Coil.USAGE_IGNORE_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].text = Coil.USAGE_IGNORE_BUTTON_TEXT
 
     def input_saved(self):
         root = tk.Tk()
@@ -244,14 +249,14 @@ class DisplayApp(App):
         bubble.id = "bubble_id"
         bubble.background_color = (1, 1, 1, 1)
         # creating bubble buttons
-        button1 = BubbleButton(text="Полный", size_hint=(0.3, 1))
-        button1.id = "bb1" + obj.id
+        button1 = BubbleButton(text="(П)олный", size_hint=(0.3, 1))
+        button1.id = "bb0" + obj.id
         button1.bind(on_press=self.bubble_button_press)
-        button2 = BubbleButton(text="Паста", size_hint=(0.3, 1))
-        button2.id = "bb2" + obj.id
+        button2 = BubbleButton(text="(Д)озатор", size_hint=(0.3, 1))
+        button2.id = "bb1" + obj.id
         button2.bind(on_press=self.bubble_button_press)
-        button3 = BubbleButton(text="Игнорировать", size_hint=(0.4, 1))
-        button3.id = "bb3" + obj.id
+        button3 = BubbleButton(text="(И)гнорировать", size_hint=(0.4, 1))
+        button3.id = "bb2" + obj.id
         button3.bind(on_press=self.bubble_button_press)
 
         # adding buttons to the bubble
@@ -306,7 +311,7 @@ class DisplayApp(App):
             cb_enable.id = "enKat" + str(num + 1)
             cb_enable.color = (1, 0, 1, 1)
 
-            main_button = Button(text='...', size_hint=(0.1, 1))
+            main_button = Button(text='П', size_hint=(0.1, 1))
             main_button.bind(on_press=self.show_bubble)
             main_button.background_color = (1, 0.6, 0.1, 1)
             main_button.id = "btddKat" + str(num + 1)

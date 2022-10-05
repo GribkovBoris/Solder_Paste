@@ -2,6 +2,12 @@ class Coil:
     USAGE_FULL = 0
     USAGE_PASTE = 1
     USAGE_IGNORE = 2
+    USAGE_FULL_BUTTON_TEXT = "П"
+    USAGE_PASTE_BUTTON_TEXT = "Д"
+    USAGE_IGNORE_BUTTON_TEXT = "И"
+    USAGE_FULL_TEXT_FIELD_COLOR = [1, 1, 0, 1]
+    USAGE_PASTE_TEXT_FIELD_COLOR = [0.4, 0.6, 0.1, 1]
+    USAGE_IGNORE_TEXT_FIELD_COLOR = [0.3, 0.3, 0.3, 1]
 
     def __init__(self):
         self.pattern_name = ""
