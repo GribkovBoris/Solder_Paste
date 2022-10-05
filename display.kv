@@ -72,142 +72,180 @@
                         text:'SM-6 - MOC3063'
                     Label:
                         text:'SO8 - PIC12F675'
-            # ------------------------------ Interface ---------------------------------------
+            # ------------------------------ Interface & Output ---------------------------------------
             BoxLayout:
-                size_hint:(1,1)
+                size_hint:(1.1,1)
                 orientation:'vertical'
-                padding: 20
-                spacing: 20
-                BoxLayout:
-                    size_hint:(1,.8)
-                    orientation:'vertical'
-                BoxLayout:
-                    orientation:'vertical'
-                    size_hint:(1,.8)
-                    Label:
-                        text:'Загрузка файла координат из:'
-                    BoxLayout:
-                        orientation:'horizontal'
-                        Button:
-                            id:bInputPcad
-                            text:'PCAD'
-                            on_release:
-                                root.input_pcad()
-                        Button:
-                            id:bInputSaved
-                            text:'Существующий Input'
-                            on_release:
-                                root.input_saved()
-                    Button:
-                        id:bCorrectCoords
-                        text:'Корректировка координат PCAD (файл *.csv)'
-                        on_release:
-                            root.correct_coords()
-                BoxLayout:
-                    orientation:'horizontal'
-                    size_hint:(1,0.3)
-                    Label:
-                        text:'Название'
-                        size_hint:(.5,1)
-                    TextInput:
-                        id: ti_device_name
-                        hint_text:'name'
+                # ------------------------------ Interface ---------------------------------------
                 BoxLayout:
                     size_hint:(1,1)
-                    orientation:'horizontal'
+                    orientation:'vertical'
+                    padding: [10, 10, 10, 10]
                     BoxLayout:
-                        size_hint:(1,0.7)
-                        orientation:'vertical'
-                        Label:
-                            text:'Размеры'
+                        orientation:'horizontal'
+                        size_hint:(1,1)
+                        # ============================= Block input =============================
                         BoxLayout:
-                            orientation:'horizontal'
-                            Label:
-                                text:'x'
-                                size_hint:(.2,1)
-                                background_color: 0.1, 0.5, 0.6, 1
-                            TextInput:
-                                id: ti_size_x
-                                hint_text:'1'
+                            orientation:'vertical'
+                            # ------------------------------ Device name ---------------------------------------
+                            BoxLayout:
+                                size_hint:(1,0.15)
+                                orientation:'horizontal'
+                            BoxLayout:
+                                orientation:'horizontal'
+                                size_hint:(1,0.3)
+                                padding: [0, 10, 0, 0]
+                                Label:
+                                    text:'Название'
+                                    size_hint:(.5,1)
+                                TextInput:
+                                    id: ti_device_name
+                                    hint_text:'name'
+                            BoxLayout:
+                                orientation:'horizontal'
+                                size_hint:(1,0.8)
+                                # ------------------------------ Size ---------------------------------------
+                                BoxLayout:
+                                    size_hint:(1,0.8)
+                                    orientation:'vertical'
+                                    BoxLayout:
+                                        size_hint:(1,0.8)
+                                        orientation:'vertical'
+                                        Label:
+                                            text:'Размеры'
+                                        BoxLayout:
+                                            orientation:'horizontal'
+                                            Label:
+                                                text:'x'
+                                                size_hint:(.2,0.5)
+                                                background_color: 0.1, 0.5, 0.6, 1
+                                            TextInput:
+                                                id: ti_size_x
+                                                hint_text:'1'
+                                        BoxLayout:
+                                            orientation:'horizontal'
+                                            Label:
+                                                text:'y'
+                                                size_hint:(.2,0.5)
+                                            TextInput:
+                                                id: ti_size_y
+                                                hint_text:'1'
+                                # ------------------------------ Count ---------------------------------------
+                                BoxLayout:
+                                    size_hint:(1,0.8)
+                                    orientation:'vertical'
+                                    Label:
+                                        text:'Количество'
+                                    BoxLayout:
+                                        orientation:'horizontal'
+                                        Label:
+                                            text:'x'
+                                            size_hint:(.2,0.5)
+                                        TextInput:
+                                            id: ti_devices_number_x
+                                            hint_text:'1'
+                                    BoxLayout:
+                                        orientation:'horizontal'
+                                        Label:
+                                            text:'y'
+                                            size_hint:(.2,0.5)
+                                        TextInput:
+                                            id: ti_devices_number_y
+                                            hint_text:'1'
+                            BoxLayout:
+                                size_hint:(1,0.1)
+                                orientation:'horizontal'
+                        # ------------------------------ Import ---------------------------------------
                         BoxLayout:
-                            orientation:'horizontal'
+                            orientation:'vertical'
+                            padding: [20, 0, 0, 0]
                             Label:
-                                text:'y'
-                                size_hint:(.2,1)
-                            TextInput:
-                                id: ti_size_y
-                                hint_text:'1'
+                                size_hint:(1,0.4)
+                                text_size: self.size
+                                valign:'middle'
+                                text:'Загрузка файла координат из:'
+                            Button:
+                                size_hint:(1,0.7)
+                                id:bInputPcad
+                                text:'PCAD'
+                                on_release:
+                                    root.input_pcad()
+                            Button:
+                                size_hint:(1,0.7)
+                                id:bInputSaved
+                                text:'Существующий Input'
+                                on_release:
+                                    root.input_saved()
+                            BoxLayout:
+                                padding: [0, 10, 0, 0]
+                                size_hint:(1,1.1)
+                                Button:
+                                    id:bCorrectCoords
+                                    text:'Корректировка координат\n       PCAD (файл *.csv)'
+                                    on_release:
+                                        root.correct_coords()
+                    # ------------------------------ Switches ---------------------------------------
                     BoxLayout:
-                        size_hint:(1,0.7)
+                        size_hint:(1,0.6)
+                        padding: 10
                         orientation:'vertical'
-                        Label:
-                            text:'Количество'
                         BoxLayout:
                             orientation:'horizontal'
-                            Label:
-                                text:'x'
-                                size_hint:(.2,1)
-                            TextInput:
-                                id: ti_devices_number_x
-                                hint_text:'1'
+                            CheckBox:
+                                id:cb_chart
+                            CheckLabel:
+                                text: "График"
                         BoxLayout:
                             orientation:'horizontal'
-                            Label:
-                                text:'y'
-                                size_hint:(.2,1)
-                            TextInput:
-                                id: ti_devices_number_y
-                                hint_text:'1'
+                            CheckBox:
+                                id:cb_sd_chmt
+                                on_active:
+                                    cb_sd_dispenser.active = False
+                            CheckLabel:
+                                text: "Копировать на SD карту CHMT"
+                        BoxLayout:
+                            orientation:'horizontal'
+                            CheckBox:
+                                id:cb_sd_dispenser
+                                on_active:
+                                    cb_sd_chmt.active = False
+                            CheckLabel:
+                                text: "Копировать на SD карту Дозатор"
+                        BoxLayout:
+                            orientation:'horizontal'
+                            CheckBox:
+                                id:cb_split_size
+                                color:.294, .761, .623
+                                size_hint:(.1,1)
+                            CheckLabel:
+                                text: "Разбить файлы по размеру компонентов"
+                    # ------------------------------ Calculate button ---------------------------------------
+                    BoxLayout:
+                        size_hint:(1,0.2)
+                        orientation:'horizontal'
+                        Button:
+                            text:'Расчёт'
+                            on_release:
+                                root.calculate_pcad()
+                # ------------------------------ Output ---------------------------------------
                 BoxLayout:
-                    size_hint:(1,0.6)
+                    padding: [10, 0, 0, 0]
+                    spacing: 5
+                    size_hint:(1,1)
                     orientation:'vertical'
                     BoxLayout:
+                        padding: [0, 0, 0, 10]
+                        size_hint:(1,0.1)
                         orientation:'horizontal'
-                        CheckBox:
-                            id:cb_chart
-                        CheckLabel:
-                            text: "График"
-                    BoxLayout:
-                        orientation:'horizontal'
-                        CheckBox:
-                            id:cb_sd_chmt
-                            on_active:
-                                cb_sd_dispenser.active = False
-                        CheckLabel:
-                            text: "Копировать на SD карту CHMT"
-                    BoxLayout:
-                        orientation:'horizontal'
-                        CheckBox:
-                            id:cb_sd_dispenser
-                            on_active:
-                                cb_sd_chmt.active = False
-                        CheckLabel:
-                            text: "Копировать на SD карту Дозатор"
-                    BoxLayout:
-                        orientation:'horizontal'
-                        CheckBox:
-                            id:cb_split_size
-                            color:.294, .761, .623
-                            size_hint:(.1,1)
-                        CheckLabel:
-                            text: "Разбить файлы по размеру компонентов"
-                BoxLayout:
-                    size_hint:(1,0.6)
-                    orientation:'horizontal'
-                    Button:
-                        size_hint:(.3,0.6)
-                        text:'Расчёт'
-                        on_release:
-                            root.calculate_pcad()
-            # ------------------------------ Output ---------------------------------------
-            BoxLayout:
-                spacing: 5
-                size_hint:(0.5,1)
-                orientation:'vertical'
-                ScrollView:
-                    Label:
-                        id: ll_out
-                        text:'-----------------------\nВывод:\n-----------------------\n\n'
-                        size_hint:(1,1)
-                        size_hint: None, None     # <<<<<<<<<<
-                        size: self.texture_size   # <<<<<<<<<<
+                        Label:
+                            size_hint:(0.1,0.1)
+                            text:'Вывод:'
+                            halign: 'left'
+                        BoxLayout:
+                            orientation:'horizontal'
+                    ScrollView:
+                        size_hint:(1,1.4)
+                        Label:
+                            id: ll_out
+                            size_hint: None, None     # <<<<<<<<<<
+                            size: self.texture_size   # <<<<<<<<<<

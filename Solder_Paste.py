@@ -52,6 +52,7 @@ class PcadConverter:
     # ***********************************************************************
 
     def __init__(self):
+        self.coords_sort = None
         self.components_fail = None
         self.path_to_folder = get_path_to_folder()
         self.path_to_folder_output = self.path_to_folder
@@ -298,7 +299,6 @@ class PcadConverter:
             self.coords_save.append(com)
         # --------------------------------------------------------------
         self.print_custom(f"Количество точек - {len(coords)}")
-        self.print_custom("-------------------------------")
         # --------------------------------------------------------------
         self.coords_sort = []
 
@@ -407,7 +407,7 @@ class PcadConverter:
         file_dispenser_main.write(";m2")
         file_dispenser_main.close()
         # --------------------------------------------------------------
-        self.file_dispenser_name_size = self.path_to_folder_output + self.interface_data.device_name + "t.nc"
+        self.file_dispenser_name_size = self.path_to_folder_output + self.interface_data.device_name + "T.nc"
         file_dispenser_size = open(self.file_dispenser_name_size, 'w')
         file_dispenser_size.write(";start size\n")
         file_dispenser_size.write(f"d0:x{round(dot_min.x)}y{round(dot_min.y)}z0\n")
@@ -419,7 +419,7 @@ class PcadConverter:
         file_dispenser_size.write(";m2")
         file_dispenser_size.close()
         # --------------------------------------------------------------
-        self.file_dispenser_name_control = self.path_to_folder_output + self.interface_data.device_name + "x.nc"
+        self.file_dispenser_name_control = self.path_to_folder_output + self.interface_data.device_name + "X.nc"
         file_dispenser_control = open(self.file_dispenser_name_control, 'w')
         # --------------------------------------------------------------
         file_dispenser_control.write(";start control\n")
@@ -659,7 +659,6 @@ class PcadConverter:
                                          self.interface_data.device_name + "b" + ".csv"
                         shutil.copy(file_chmt_name, file_sd)
 
-        self.print_custom("-------------------------------")
         self.print_custom(f"Количество компонентов - {number_components}")
         self.print_custom(f"Количество компонентов автоматической пайки - {number_auto}")
         self.print_custom(f"Количество необработанных компонентов - {number_decline}:")
@@ -679,9 +678,7 @@ class PcadConverter:
                 type_unique.append(k.type)
                 value_unique.append(k.value)
                 i += 1
-                self.print_custom(f"{i}) {k.description}, {k.pattern_name}, {k.type}, {k.value}")
-
-        self.print_custom("-------------------------------")
+                self.print_custom(f"{i}) {k.description}, {k.pattern_name}, {k.value}")
         # --------------------------------------------------------------
 
     def get_drive(self):
@@ -765,6 +762,11 @@ class PcadConverter:
                 self.interface_data.stacks.append(smd_kat)
         file_options.close()
 
+    def get_file_name(self, file_path):
+        pos = file_path.rfind('\\') + 1
+        file_name = file_path[pos:]
+        return file_name
+
     def create_options_file(self):
         file_options_lines = [self.NUMBER_NAME + ") " + str(self.interface_data.device_name),
                               self.NUMBER_SIZE_X + ") " + str(self.interface_data.size_x),
@@ -794,12 +796,15 @@ class PcadConverter:
 
         if self.components:
             self.create_dispenser_files()
-            self.print_custom("-------------------------------")
-            self.print_custom(f"Файл станка CHM-T36:\n     {self.file_chmt_name}")
-            self.print_custom(f"Файл дозатора (основной):\n     {self.file_dispenser_name_main}")
-            self.print_custom(f"Файл дозатора (настройка начала):\n     {self.file_dispenser_name_control}")
-            self.print_custom(f"Файл дозатора (настройка угла):\n     {self.file_dispenser_name_size}")
-            self.print_custom("-------------------------------")
+            self.print_custom(f"Путь к файлам: {self.path_to_folder}")
+            self.print_custom(f"Файл станка CHM-T36:                         "
+                              f"{self.get_file_name(self.file_chmt_name)}")
+            self.print_custom(f"Файл дозатора (основной):                "
+                              f"{self.get_file_name(self.file_dispenser_name_main)}")
+            self.print_custom(f"Файл дозатора (настройка начала):  "
+                              f"{self.get_file_name(self.file_dispenser_name_control)}")
+            self.print_custom(f"Файл дозатора (настройка угла):       "
+                              f"{self.get_file_name(self.file_dispenser_name_size)}")
 
             random.seed()
             if self.interface_data.show_plot:

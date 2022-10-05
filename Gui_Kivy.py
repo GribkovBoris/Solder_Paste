@@ -5,7 +5,6 @@ from tkinter import filedialog
 import tkinter as tk
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
@@ -14,7 +13,6 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty
 from kivy.core.window import Window
-from kivy.uix.dropdown import DropDown
 # ==================================================================
 from Solder_Paste import PcadConverter
 from Smd_Class import Smd
@@ -77,32 +75,8 @@ class Container(BoxLayout):
         stack_error = 0
         for kat in self.interface_data.stacks:
             if kat.number > 0:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.patternName}, {kat.value}","")
-                else:
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.patternName}","")
-                flag = 0
-                only_dot_flag = False
-                if kat.usage != 2:
-                    for com in self.converter.components:
-                        if kat.usage == 1:
-                            only_dot_flag = True
-                        if (com.pattern_name == kat.pattern_name) and (com.value == kat.value):
-                            if not only_dot_flag:
-                                flag = 1
-                            else:
-                                flag = 2
-                            break
-                self.coil_field_color(kat.number, flag)
+                self.coil_field_color(kat.number, kat.usage)
             else:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.patternName}, {kat.value}")
-                else:
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.patternName}")
                 stack_error = 2
 
         if stack_error:
@@ -204,8 +178,7 @@ class Container(BoxLayout):
         self.print_custom("\n")
         self.read_gui()
         self.converter.convert_pcad_to_files()
-        self.ll_out.text = '-----------------------\nВывод:\n-----------------------\n\n' + \
-                           self.converter.get_print_custom()
+        self.ll_out.text = self.converter.get_print_custom()
         self.refresh_gui_coils_colors()
 
 
