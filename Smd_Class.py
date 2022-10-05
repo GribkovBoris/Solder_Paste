@@ -24,10 +24,11 @@ class Smd:
 
     }
 
-    def __init__(self, number, pattern_name, value):
+    def __init__(self, number, pattern_name, value, usage):
         self.number = number
         self.value = value
         self.pattern_name = pattern_name
+        self.usage = usage
         self.height = 0
         self.height = self.get_height(pattern_name)
 

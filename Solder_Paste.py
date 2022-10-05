@@ -753,11 +753,15 @@ class PcadConverter:
                         self.interface_data.stacks.append(smd_kat)
                         j += 1
                 prev_i = i
-                self.interface_data.coils[i] = str_input[pos + 2:-1]
-                param_kat = self.interface_data.coils[i].split()
+                param_kat = str_input[pos + 2:-1].split()
                 if len(param_kat) < 2:
-                    param_kat = [" ", " "]
-                smd_kat = Smd(i + 1, param_kat[0], param_kat[1])
+                    param_kat = [" ", " ", 0]
+                if len(param_kat) == 2:
+                    param_kat.append(0)
+                self.interface_data.coils[i].pattern_name = param_kat[0]
+                self.interface_data.coils[i].value = param_kat[1]
+                self.interface_data.coils[i].usage = param_kat[2]
+                smd_kat = Smd(i + 1, param_kat[0], param_kat[1], param_kat[2])
                 self.interface_data.stacks.append(smd_kat)
         file_options.close()
 
@@ -772,7 +776,8 @@ class PcadConverter:
                               self.NUMBER_SD_DISPENSER + ") " + str(self.interface_data.copy_to_sd_dispenser),
                               self.NUMBER_SPLIT_SIZE + ") " + str(self.interface_data.split_size_type)]
         for kat in range(self.interface_data.NUMBER_COILS):
-            file_options_lines.append("k" + str(kat + 1) + ") " + self.interface_data.coils[kat])
+            file_options_lines.append("k" + str(kat + 1) + ") " +
+                                      self.interface_data.coils[kat].get_string(separator=" "))
 
         file_options = open(self.path_to_folder + "optionsSP.txt", 'w')
         for strInput in file_options_lines:

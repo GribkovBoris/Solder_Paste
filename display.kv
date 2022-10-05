@@ -48,8 +48,9 @@
         BoxLayout:
             spacing: 20
             orientation:'horizontal'
+            # ------------------------------ Coils ---------------------------------------
             BoxLayout:
-                size_hint:(1.2,1)
+                size_hint:(1.4,1)
                 orientation:'vertical'
                 padding: [5,10,5,10]
                 Label:
@@ -71,6 +72,7 @@
                         text:'SM-6 - MOC3063'
                     Label:
                         text:'SO8 - PIC12F675'
+            # ------------------------------ Interface ---------------------------------------
             BoxLayout:
                 size_hint:(1,1)
                 orientation:'vertical'
@@ -197,8 +199,10 @@
                         text:'Расчёт'
                         on_release:
                             root.calculate_pcad()
+            # ------------------------------ Output ---------------------------------------
             BoxLayout:
                 spacing: 5
+                size_hint:(0.5,1)
                 orientation:'vertical'
                 ScrollView:
                     Label:

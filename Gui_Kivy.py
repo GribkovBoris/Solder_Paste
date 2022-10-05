@@ -5,6 +5,7 @@ from tkinter import filedialog
 import tkinter as tk
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.bubble import Bubble, BubbleButton
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
@@ -72,6 +73,7 @@ class Container(BoxLayout):
         pass
 
     def refresh_gui_coils_colors(self):
+        stack_error = 0
         for kat in self.interface_data.stacks:
             if kat.number > 0:
                 if kat.value != "":
@@ -82,23 +84,17 @@ class Container(BoxLayout):
                     # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.patternName}","")
                 flag = 0
                 only_dot_flag = False
-                for com in self.converter.components:
-                    kat_value = kat.value
-                    if kat_value.find("*") != -1:
-                        kat_value = kat_value.replace("*", "")
-                        only_dot_flag = True
-                    if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
-                        if not only_dot_flag:
-                            flag = 1
-                        else:
-                            flag = 2
-                        break
-                if flag == 0:
-                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
-                if flag == 1:
-                    self.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
-                if flag == 2:
-                    self.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
+                if kat.usage != 2:
+                    for com in self.converter.components:
+                        if kat.value.usage == 1:
+                            only_dot_flag = True
+                        if (com.pattern_name == kat.pattern_name) and (com.value == kat.value):
+                            if not only_dot_flag:
+                                flag = 1
+                            else:
+                                flag = 2
+                            break
+                self.coil_field_color(kat.number, flag)
             else:
                 if kat.value != "":
                     pass
@@ -106,6 +102,15 @@ class Container(BoxLayout):
                 else:
                     pass
                     # self.PrintCustom(f"Вручную -\t{kat.patternName}")
+                stack_error = 2
+
+        if stack_error:
+            self.print_custom("-------------------------------------------------------------------")
+            if stack_error == 1:
+                self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
+            if stack_error == 2:
+                self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
+            self.print_custom("-------------------------------------------------------------------\n")
 
     def refresh_gui(self):
         self.ti_device_name.text = self.interface_data.device_name
@@ -118,7 +123,8 @@ class Container(BoxLayout):
         self.cb_sd_dispenser.active = self.interface_data.copy_to_sd_dispenser
         self.cb_split_size.active = self.interface_data.split_size_type
         for i in range(self.get_number_coils()):
-            self.ids[str("kat" + str(i + 1))].text = self.interface_data.coils[i]
+            self.ids[str("katPattern" + str(i + 1))].text = self.interface_data.coils[i].pattern_name
+            self.ids[str("katValue" + str(i + 1))].text = self.interface_data.coils[i].value
 
     def read_gui(self):
         self.ll_out.text = ""
@@ -150,63 +156,25 @@ class Container(BoxLayout):
             self.interface_data.devices_number_y = 1
         # print(self.ids)
         for kat in range(self.interface_data.NUMBER_COILS):
-            self.interface_data.coils[kat] = self.ids[str("kat" + str(kat + 1))].text
-            coil = self.interface_data.coils[kat].split()
-            if len(coil) == 2:
-                self.interface_data.stacks[kat].value = coil[1]
-                self.interface_data.stacks[kat].pattern_name = coil[0]
-                Smd.get_height(self.interface_data.stacks[kat].pattern_name)
+            self.interface_data.coils[kat].pattern_name = self.ids[str("katPattern" + str(kat + 1))].text
+            self.interface_data.coils[kat].value = self.ids[str("katPattern" + str(kat + 1))].text
+            self.interface_data.stacks[kat].value = self.interface_data.coils[kat].value
+            self.interface_data.stacks[kat].pattern_name = self.interface_data.coils[kat].pattern_name
+            Smd.get_height(self.interface_data.stacks[kat].pattern_name)
 
-    def coils_fields_color(self):
-        stack_error = 0
-        # self.PrintCustom(f"Катушки:")
-        for kat in self.interface_data.stacks:
-            if kat.number > 0:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}, {kat.value}","")
-                else:
-                    pass
-                    # self.PrintCustom(f"Катушка №{kat.number} -\t{kat.pattern_name}","")
-                flag = 0
-                # self.PrintCustom("")
-                only_dot_flag = False
-                for com in self.components:
-                    kat_value = kat.value
-                    if kat_value.find("*") != -1:
-                        kat_value = kat_value.replace("*", "")
-                        only_dot_flag = True
-                    if (com.pattern_name == kat.pattern_name) and (com.value == kat_value):
-                        if not only_dot_flag:
-                            flag = 1
-                        else:
-                            flag = 2
-                        break
-                if flag == 0:  # not using
-                    # self.PrintCustom(" - не используется")
-                    self.root.ids["kat" + str(kat.number)].background_color = [0.7, 0, 0.1, 1]
-                if flag == 1:  # full use
-                    # self.PrintCustom("")
-                    self.root.ids["kat" + str(kat.number)].background_color = [0, 1, 0, 1]
-                if flag == 2:  # paste only
-                    # self.PrintCustom("Только паста")
-                    self.root.ids["kat" + str(kat.number)].background_color = [0.7, 0.6, 0.1, 1]
-            else:
-                if kat.value != "":
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}, {kat.value}")
-                else:
-                    pass
-                    # self.PrintCustom(f"Вручную -\t{kat.pattern_name}")
-                stack_error = 2
-
-        if stack_error:
-            self.print_custom("-------------------------------------------------------------------")
-            if stack_error == 1:
-                self.print_custom("-------------------- Есть катушки с номером 0 ---------------------")
-            if stack_error == 2:
-                self.print_custom("------------------ Есть элементы с ручной пайкой ------------------")
-            self.print_custom("-------------------------------------------------------------------\n")
+    def coil_field_color(self, kat_number, usage):
+        if usage == 0:  # not using
+            # self.PrintCustom(" - не используется")
+            self.root.ids["katPattern" + str(kat_number)].background_color = [0.7, 0, 0.1, 1]
+            self.root.ids["katValue" + str(kat_number)].background_color = [0.7, 0, 0.1, 1]
+        if usage == 1:  # full use
+            # self.PrintCustom("")
+            self.root.ids["katPattern" + str(kat_number)].background_color = [0, 1, 0, 1]
+            self.root.ids["katValue" + str(kat_number)].background_color = [0, 1, 0, 1]
+        if usage == 2:  # paste only
+            # self.PrintCustom("Только паста")
+            self.root.ids["katPattern" + str(kat_number)].background_color = [0.7, 0.6, 0.1, 1]
+            self.root.ids["katValue" + str(kat_number)].background_color = [0.7, 0.6, 0.1, 1]
 
     def input_saved(self):
         root = tk.Tk()
@@ -263,12 +231,7 @@ class DisplayApp(App):
         # self.root.ids["bubble_id"].
         # self.cont.remove_widget(self.btn)
         Clock.schedule_once(lambda dt: self.remove_bubble_widget(), 0.1)
-        if bubble_button_number == '1':
-            self.cont.ids["kat" + kat_number].background_color = (1, 1, 0, 1)
-        if bubble_button_number == '2':
-            self.cont.ids["kat" + kat_number].background_color = (0, 0.4, 0, 1)
-        if bubble_button_number == '3':
-            self.cont.ids["kat" + kat_number].background_color = (0.4, 0.4, 0.4, 1)
+        self.cont.coil_field_color(kat_number, bubble_button_number)
 
     # Defining the function to show the bubble
     def show_bubble(self, obj):
@@ -300,11 +263,16 @@ class DisplayApp(App):
         self.root.ids[bubble.id] = bubble
         self.cont.fl_main.add_widget(bubble)
 
+    @staticmethod
+    def box_layout_kat_create():
+        bl_kat = BoxLayout()
+        bl_kat.orientation = "vertical"
+        bl_kat.add_widget(Label(text="| Номер | Режим |       Тип       |    Номинал   |"))
+        return bl_kat
+
     def on_start(self):
-        bl_kat_l = BoxLayout()
-        bl_kat_l.orientation = "vertical"
-        bl_kat_r = BoxLayout()
-        bl_kat_r.orientation = "vertical"
+        bl_kat_l = self.box_layout_kat_create()
+        bl_kat_r = self.box_layout_kat_create()
         number_coils = self.cont.get_number_coils()
         number_trays = self.cont.get_number_trays()
         for kat in range(number_coils):
@@ -312,28 +280,41 @@ class DisplayApp(App):
             bl_kat = BoxLayout()
             bl_kat.orientation = "horizontal"
             bl_kat.padding = (0, 0, 0, 2)
-            text_str = "№" + str(num + 1)
+            text_str = str(num + 1)
             if kat < number_trays:
-                text_str = text_str + "(" + str(3 - kat) + ")"
-            kat_label = Label(text=text_str)
-            kat_text_input = TextInput(hint_text="1", size_hint=(0.9, 1))
-            kat_text_input.id = "kat" + str(num + 1)
-            self.root.ids[kat_text_input.id] = kat_text_input
-            kat_text_input.size_hint = (2, 1)
-            kat_text_input.background_color = (1, 1, 0, 1)
+                text_str = "Л" + str(3 - kat)
+            bl_kat_label = BoxLayout(size_hint=(0.2, 1))
+            kat_label = Label(text=text_str, halign="right", valign="middle")
+            # kat_label.text_size = bl_kat_label.size
+            bl_kat_label.add_widget(kat_label)
+
+            bl_kat_text_input = BoxLayout(size_hint=(0.7, 1))
+            kat_text_input_pattern = TextInput(hint_text="Тип")
+            kat_text_input_pattern.id = "katPattern" + str(num + 1)
+            self.root.ids[kat_text_input_pattern.id] = kat_text_input_pattern
+            kat_text_input_pattern.size_hint = (2, 1)
+            kat_text_input_pattern.background_color = (1, 1, 0, 1)
+            kat_text_input_value = TextInput(hint_text="Номинал")
+            kat_text_input_value.id = "katValue" + str(num + 1)
+            self.root.ids[kat_text_input_value.id] = kat_text_input_value
+            kat_text_input_value.size_hint = (2, 1)
+            kat_text_input_value.background_color = (1, 1, 0, 1)
+            bl_kat_text_input.add_widget(kat_text_input_pattern)
+            bl_kat_text_input.add_widget(kat_text_input_value)
+
             cb_enable = CheckBox(active=True)
             cb_enable.id = "enKat" + str(num + 1)
             cb_enable.color = (1, 0, 1, 1)
 
-            main_button = Button(text='...', size_hint=(0.4, 1))
+            main_button = Button(text='...', size_hint=(0.1, 1))
             main_button.bind(on_press=self.show_bubble)
             main_button.background_color = (1, 0.6, 0.1, 1)
             main_button.id = "btddKat" + str(num + 1)
             self.root.ids[main_button.id] = main_button
 
-            bl_kat.add_widget(kat_label)
+            bl_kat.add_widget(bl_kat_label)
             bl_kat.add_widget(main_button)
-            bl_kat.add_widget(kat_text_input)
+            bl_kat.add_widget(bl_kat_text_input)
             # bl_kat.add_widget(cb_enable)
             if num % 2:
                 bl_kat_r.add_widget(bl_kat)
