@@ -1,4 +1,5 @@
 # ---------------------------------------------------------------
+import os
 import sys
 import pyperclip
 from pynput.keyboard import Key, Listener
@@ -14,12 +15,11 @@ from Point_Class import Point
 class MyThread(Thread):
     def __init__(self, name):
         Thread.__init__(self)
-        # GuiAutomizer.name = name
 
         def on_press_esc(key):
             if key == Key.esc:
                 print("------------------------- Завершение F -------------------------")
-                # os._exit(0)
+                os._exit(0)
                 sys.exit()
 
         # Collect events until released

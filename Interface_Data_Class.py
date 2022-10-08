@@ -1,33 +1,10 @@
-class Coil:
-    USAGE_FULL = 0
-    USAGE_PASTE = 1
-    USAGE_IGNORE = 2
-    USAGE_FULL_BUTTON_TEXT = "П"
-    USAGE_PASTE_BUTTON_TEXT = "Д"
-    USAGE_IGNORE_BUTTON_TEXT = "И"
-    USAGE_FULL_TEXT_FIELD_COLOR = [1, 1, 0, 1]
-    USAGE_PASTE_TEXT_FIELD_COLOR = [0.4, 0.6, 0.1, 1]
-    USAGE_IGNORE_TEXT_FIELD_COLOR = [0.3, 0.3, 0.3, 1]
-
-    def __init__(self):
-        self.pattern_name = ""
-        self.value = ""
-        self.usage = 0
-
-    def set_string(self, coil_string):
-        coil_string_array = coil_string.split(" ")
-        self.pattern_name = coil_string_array[0]
-        self.value = coil_string_array[1]
-        self.usage = int(coil_string_array[2])
-
-    def get_string(self, separator):
-        coil_string = self.pattern_name + separator + self.value + separator + str(self.usage)
-        return coil_string
-
-
 class InterfaceData:
-    NUMBER_COILS = 32
+    NUMBER_COILS = 29
     NUMBER_TRAYS = 3
+    NUMBER_DISPENSER = 3
+
+    def get_number_slots(self):
+        return self.NUMBER_COILS + self.NUMBER_TRAYS + self.NUMBER_DISPENSER
 
     def __init__(self):
         self.stacks = []
@@ -40,6 +17,3 @@ class InterfaceData:
         self.show_plot = False
         self.copy_to_sd_chmt = False
         self.copy_to_sd_dispenser = False
-        self.coils = []
-        for i in range(self.NUMBER_COILS):
-            self.coils.append(Coil())

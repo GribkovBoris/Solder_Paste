@@ -3,8 +3,8 @@
     valign: 'middle'
     text_size: self.size
 
-<Button>:
-    background_color: (1.0, 0.6, 0.4, 1.0)
+# <Button@Button>:
+#     background_color: (1.0, 0.6, 0.4, 1.0)
 
 <CheckBox>:
     color: (1, 1, 1, 1.0)
@@ -22,7 +22,6 @@
             size:[14,14]
     size_hint:(.1,1)
 
-
 <Container>
     ti_size_x: ti_size_x
     ti_size_y: ti_size_y
@@ -36,6 +35,7 @@
     bl_coils: bl_coils
     ll_out: ll_out
     fl_main: fl_main
+    bl_dispenser: bl_dispenser
 
     canvas.before:
         Color:
@@ -45,6 +45,16 @@
             pos: self.pos
     FloatLayout:
         id: fl_main
+        size_hint : 1,1
+        TextInput:
+            text: "wtf"
+            background_normal: ""
+            background_color: 0.9, 0.9, 0.1, 1
+            size_hint:(None,None)
+            width: 100
+            height: 50
+            on_focus:
+                root.show_dropdown(self.text)
         BoxLayout:
             spacing: 20
             orientation:'horizontal'
@@ -59,19 +69,44 @@
                 BoxLayout:
                     id: bl_coils
                     size_hint:(1,1.3)
+                    # ------------------------------------------------------------ TODO
                 BoxLayout:
-                    orientation:'vertical'
+                    orientation:'horizontal'
                     size_hint:(1,0.3)
-                    Label:
-                        text:'SOD80_S - диод'
-                    Label:
-                        text:'SOT-23 - BAS40-06'
-                    Label:
-                        text:'DB-1S - DB107S'
-                    Label:
-                        text:'SM-6 - MOC3063'
-                    Label:
-                        text:'SO8 - PIC12F675'
+                    padding: [35,0,0,0]
+                    BoxLayout:
+                        orientation:'vertical'
+                        BoxLayout:
+                            orientation:'vertical'
+                        Button:
+                            text:'Сбросить режимы'
+                            on_release:
+                                root.reset_usage(0)
+                        Button:
+                            text:'Только дозатор'
+                            on_release:
+                                root.reset_usage(1)
+                        BoxLayout:
+                            orientation:'vertical'
+                    BoxLayout:
+                        orientation:'vertical'
+                        Label:
+                            text:'K1010 - оптрон'
+                        Label:
+                            text:'SOD80_S - диод'
+                        Label:
+                            text:'SOT-23 - BAS40-06'
+                        Label:
+                            text:'DB-1S - DB107S'
+                        Label:
+                            text:'SM-6 - MOC3063'
+                        Label:
+                            text:'SO8 - PIC12F675'
+                    BoxLayout:
+                        size_hint:(2.2,1)
+                        padding: [0,12,0,12]
+                        orientation:'vertical'
+                        id: bl_dispenser
             # ------------------------------ Interface & Output ---------------------------------------
             BoxLayout:
                 size_hint:(1.1,1)
@@ -245,7 +280,9 @@
                             orientation:'horizontal'
                     ScrollView:
                         size_hint:(1,1.4)
+                        scroll_type: ['bars']
                         Label:
                             id: ll_out
+                            text:''
                             size_hint: None, None     # <<<<<<<<<<
                             size: self.texture_size   # <<<<<<<<<<
