@@ -178,6 +178,8 @@ class Container(BoxLayout):
 
     def coil_field_color(self, kat_number, usage, used=0):
         usage = int(usage)
+        self.ids["katPattern" + str(kat_number)].cursor_color = Smd.USAGE_TEXT_FIELD_USED_CURSOR_COLOR
+        self.ids["katValue" + str(kat_number)].cursor_color = Smd.USAGE_TEXT_FIELD_USED_CURSOR_COLOR
         if used == 1:
             if usage == 0:
                 usage = 3
@@ -188,16 +190,19 @@ class Container(BoxLayout):
             # self.PrintCustom("")
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_FULL_TEXT_FIELD_COLOR
             self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_FULL_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].background_color = Smd.USAGE_FULL_TEXT_FIELD_COLOR
             self.ids["btddKat" + str(kat_number)].text = Smd.USAGE_FULL_BUTTON_TEXT
         if usage == 1:  # paste only
             # self.PrintCustom("Только паста")
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_PASTE_TEXT_FIELD_COLOR
             self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_PASTE_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].background_color = Smd.USAGE_PASTE_TEXT_FIELD_COLOR
             self.ids["btddKat" + str(kat_number)].text = Smd.USAGE_PASTE_BUTTON_TEXT
         if usage == 2:  # not using
             # self.PrintCustom(" - не используется")
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_IGNORE_TEXT_FIELD_COLOR
             self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_IGNORE_TEXT_FIELD_COLOR
+            self.ids["btddKat" + str(kat_number)].background_color = Smd.USAGE_IGNORE_TEXT_FIELD_COLOR
             self.ids["btddKat" + str(kat_number)].text = Smd.USAGE_IGNORE_BUTTON_TEXT
         if usage == 3:  # used
             # self.PrintCustom(" - не используется")
@@ -207,6 +212,8 @@ class Container(BoxLayout):
             # self.PrintCustom(" - не используется")
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_NOT_USED_TEXT_FIELD_COLOR
             self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_NOT_USED_TEXT_FIELD_COLOR
+            self.ids["katPattern" + str(kat_number)].cursor_color = Smd.USAGE_TEXT_FIELD_NOT_USED_CURSOR_COLOR
+            self.ids["katValue" + str(kat_number)].cursor_color = Smd.USAGE_TEXT_FIELD_NOT_USED_CURSOR_COLOR
 
     @staticmethod
     def call_file_picker(message, extension):
@@ -234,8 +241,10 @@ class Container(BoxLayout):
         pass
 
     def reset_usage(self, usage):
-        for kat in range(self.interface_data.get_number_slots() - self.interface_data.NUMBER_DISPENSER):
-            self.interface_data.stacks[kat].usage = usage
+        for kat in range(self.interface_data.get_number_slots()):
+            if usage != -1 and kat < self.interface_data.get_number_slots() - self.interface_data.NUMBER_DISPENSER:
+                self.interface_data.stacks[kat].usage = usage
+            self.interface_data.stacks[kat].used = 0
         self.converter.set_interface_data(self.interface_data)
         self.refresh_gui_coils_colors()
 
@@ -270,7 +279,7 @@ class DisplayApp(App):
         data_arr = id_str.split(" ")
         bubble_button_number = int(data_arr[0])
         kat_number = int(data_arr[1])
-        print(data_arr)
+        # print(data_arr)
         # self.root.ids["bubble_id"].
         # self.cont.remove_widget(self.btn)
         Clock.schedule_once(lambda dt: self.remove_bubble_widget(), 0.1)
@@ -328,11 +337,11 @@ class DisplayApp(App):
         # Clock.schedule_once(lambda dt: self.remove_dropdown_widget(), 0.1)
         self.cont.ti_device_name.focus = True
         # self.root.ids["fl_main"].remove_widget(self.root.ids["svDropdown_id"])
-        print(kat_number, pattern_name)
+        # print(kat_number, pattern_name)
 
     def show_dropdown(self, instance, value):
         if value:
-            #print('show')
+            # print('show')
             sv_dropdown = ScrollView()
             sv_dropdown.id = "svDropdown_id"
             sv_dropdown.bar_width = 6
@@ -343,7 +352,7 @@ class DisplayApp(App):
             top = instance.top - sv_dropdown.height - instance.height
             if top < 0:
                 top += sv_dropdown.height
-            print(top)
+            # print(top)
             sv_dropdown.pos = (instance.right - instance.width, top)
             bl_dropdown = BoxLayout()
             bl_dropdown.orientation = "vertical"
@@ -369,7 +378,7 @@ class DisplayApp(App):
     def box_layout_kat_create():
         bl_kat = BoxLayout()
         bl_kat.orientation = "vertical"
-        bl_kat.add_widget(Label(text="| Номер | Режим |       Тип        |      Номинал     |"))
+        bl_kat.add_widget(Label(text="| Номер | Режим |         Тип          |        Номинал       |"))
         return bl_kat
 
     def on_text_kat(self, instance, value):
@@ -381,7 +390,7 @@ class DisplayApp(App):
         self.cont.coil_field_color(self.cont.interface_data.stacks[id].number,
                                    self.cont.interface_data.stacks[id].usage,
                                    self.cont.interface_data.stacks[id].used)
-        print(id)
+        # print(id)
 
     def on_start(self):
         bl_kat_l = self.box_layout_kat_create()

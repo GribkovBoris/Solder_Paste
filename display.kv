@@ -68,7 +68,12 @@
                     BoxLayout:
                         orientation:'vertical'
                         BoxLayout:
+                            size_hint:(1,0.8)
                             orientation:'vertical'
+                        Button:
+                            text:'Сбросить подсветку'
+                            on_release:
+                                root.reset_usage(-1)
                         Button:
                             text:'Сбросить режимы'
                             on_release:
@@ -78,6 +83,7 @@
                             on_release:
                                 root.reset_usage(1)
                         BoxLayout:
+                            size_hint:(1,0.1)
                             orientation:'vertical'
                     BoxLayout:
                         orientation:'vertical'

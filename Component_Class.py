@@ -89,6 +89,8 @@ class Component:
             self.value = "5V1"
         if self.value == "50K":
             self.value = "51K"
+        if self.pattern_name == "R1206_":
+            self.pattern_name = "R1206"
         if self.pattern_name == "DB-1S":
             self.value = "107"
         if self.value == "Value":

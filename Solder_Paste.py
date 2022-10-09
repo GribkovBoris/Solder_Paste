@@ -86,7 +86,7 @@ class PcadConverter:
         input_text = GuiAutomizer.pcad_reports()
         # input_text = pyperclip.paste()
         input_text = input_text.replace('\n', '')
-        print(input_text)
+        # print(input_text)
         file_out.write(input_text)
         file_out.close()
 
@@ -745,7 +745,7 @@ class PcadConverter:
             if str_input[0] == "k":
                 pos = str_input.find(")")
                 i = int(str_input[1:pos]) - 1
-                print(i)
+                # print(i)
                 if i > prev_i + 1:
                     j = prev_i + 1
                     while j < i:
@@ -759,8 +759,6 @@ class PcadConverter:
                     param_kat.append(0)
                 if i >= self.interface_data.NUMBER_COILS + self.interface_data.NUMBER_TRAYS:
                     param_kat[2] = 1
-                    print('dos')
-                    param_kat[0] = str(i) + ':' + str(param_kat[2])
                 if param_kat[0] == " ":
                     param_kat[0] = ''
                 if param_kat[1] == " ":
@@ -769,7 +767,6 @@ class PcadConverter:
                 self.interface_data.stacks.append(smd_kat)
         while i < self.interface_data.get_number_slots() - 1:
             self.interface_data.stacks.append(Smd(i, "", ""))
-            print('add')
             i += 1
         file_options.close()
 

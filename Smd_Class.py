@@ -16,6 +16,8 @@ class Smd:
     USAGE_IGNORE_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
     USAGE_USED_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
     USAGE_NOT_USED_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
+    USAGE_TEXT_FIELD_NOT_USED_CURSOR_COLOR = [1, 1, 1, 1]
+    USAGE_TEXT_FIELD_USED_CURSOR_COLOR = [0, 0, 0, 1]
 
     @staticmethod
     def divine_color(color, diviner):
