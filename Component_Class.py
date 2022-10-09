@@ -12,6 +12,10 @@ class Component:
     LINE_START = 8
     LINE_END = 9
 
+    class Error:
+        def __init__(self):
+            self.not_found_in_lib = False
+
     def __init__(self, center, angle, description, comp_type, pattern_name, value, interface_data_):
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.error = False
@@ -32,10 +36,17 @@ class Component:
         self.height = None
         self.ignore_rotation = False  # !!!!!!!! TODO
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.error_pattern = self.check_errors()
         self.correct_values()
         self.correct_angles(angle)
         self.init_component_parameters()
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    def check_errors(self):
+        error_flag = False
+        if Smd.get_height(self.pattern_name) == "":
+            error_flag = True
+        return error_flag
 
     def correct_angles(self, angle):
         if self.pattern_name == "SM-6":
@@ -257,12 +268,7 @@ class Component:
         self.sizeType = Smd.get_size_type(self.pattern_name)
         for st in self.interface_data.stacks:
             st_value = st.value
-            self.onlyPaste = False
             self.skip = 0
-            if st_value.find("*") != -1:
-                self.onlyPaste = True
-                self.skip = 1
-                st_value = st_value.replace("*", "")
             if self.pattern_name == st.pattern_name and st.number != 0 and self.value == st_value:
                 self.stack = st.number
                 self.height = st.height

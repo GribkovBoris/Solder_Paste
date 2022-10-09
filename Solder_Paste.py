@@ -639,7 +639,6 @@ class PcadConverter:
 
                         if cur_comp.center.x == 0.0:
                             self.print_custom(f'{cur_comp.type} - ошибка, х = 0')
-
                     if not found:
                         number_decline += 1
                         self.components_fail.append(cur_comp)
@@ -742,6 +741,7 @@ class PcadConverter:
             if str_input[0] == "k":
                 pos = str_input.find(")")
                 i = int(str_input[1:pos]) - 1
+                print(i)
                 if i > prev_i + 1:
                     j = prev_i + 1
                     while j < i:
@@ -755,16 +755,18 @@ class PcadConverter:
                     param_kat.append(0)
                 if i >= self.interface_data.NUMBER_COILS + self.interface_data.NUMBER_TRAYS:
                     param_kat[2] = 1
+                    print('dos')
+                    param_kat[0] = str(i) + ':' + str(param_kat[2])
                 if param_kat[0] == " ":
                     param_kat[0] = ''
                 if param_kat[1] == " ":
                     param_kat[1] = ''
                 smd_kat = Smd(i + 1, param_kat[0], param_kat[1], int(param_kat[2]))
                 self.interface_data.stacks.append(smd_kat)
-        while i < self.interface_data.get_number_slots():
+        while i < self.interface_data.get_number_slots() - 1:
             self.interface_data.stacks.append(Smd(i, "", ""))
+            print('add')
             i += 1
-        self.interface_data.stacks.append(smd_kat)
         file_options.close()
 
     def get_file_name(self, file_path):

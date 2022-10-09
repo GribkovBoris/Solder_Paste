@@ -232,10 +232,6 @@ class Container(BoxLayout):
         self.print_custom(self.converter.get_print_custom())
         self.refresh_gui_coils_colors()
 
-    def show_dropdown(self, text):
-        print("kek")
-        print(text)
-
 
 class DisplayApp(App):
 
@@ -297,28 +293,63 @@ class DisplayApp(App):
         self.root.ids[bubble.id] = bubble
         self.cont.fl_main.add_widget(bubble)
 
-    def show_dropdown(self, instance, value):
-        print(instance)
-        print(value)
-        sv_dropdown = ScrollView()
-        sv_dropdown.bar_width = 6
-        sv_dropdown.bar_inactive_color = [0.7, 0.7, 0.7, 0.7]
-        sv_dropdown.width = 120
-        sv_dropdown.height = 150
-        sv_dropdown.size_hint = (None, None)
-        sv_dropdown.pos = (instance.right, instance.top)
-        bl_dropdown = BoxLayout()
-        bl_dropdown.orientation = "vertical"
-        buttons_dd_number = len(Smd.smdParams)
-        bl_dropdown.size_hint_min_y = buttons_dd_number * 25
+    def remove_dropdown_widget(self):
+        try:
+            self.root.ids["fl_main"].remove_widget(self.root.ids["svDropdown_id"])
+            #print("removed")
+        except:
+            #print("WTF NO ID")
+            pass
 
-        for smd_name in Smd.smdParams.keys():
-            btn = Button()
-            btn.text = smd_name
-            btn.background_color = [1, 1, 0, 1]
-            bl_dropdown.add_widget(btn)
-        sv_dropdown.add_widget(bl_dropdown)
-        self.cont.fl_main.add_widget(sv_dropdown)
+    def set_pattern(self, obj):
+        id_str = obj.id
+        # print(id_str)
+        id_str = id_str.replace("bpat", "")
+        id_str = id_str.replace("katPattern", " ")
+        data_arr = id_str.split(" ")
+        # pattern_name = int(data_arr[0])
+        pattern_name = obj.text
+        kat_number = int(data_arr[1])
+        self.cont.ids[str("katPattern" + str(kat_number))].text = pattern_name
+        # Clock.schedule_once(lambda dt: self.remove_dropdown_widget(), 0.1)
+        self.cont.ti_device_name.focus = True
+        # self.root.ids["fl_main"].remove_widget(self.root.ids["svDropdown_id"])
+        print(kat_number, pattern_name)
+
+    def show_dropdown(self, instance, value):
+        if value:
+            #print('show')
+            sv_dropdown = ScrollView()
+            sv_dropdown.id = "svDropdown_id"
+            sv_dropdown.bar_width = 6
+            sv_dropdown.bar_inactive_color = [0.7, 0.7, 0.7, 0.7]
+            sv_dropdown.width = 120
+            sv_dropdown.height = 150
+            sv_dropdown.size_hint = (None, None)
+            top = instance.top - sv_dropdown.height - instance.height
+            if top < 0:
+                top += sv_dropdown.height
+            print(top)
+            sv_dropdown.pos = (instance.right - instance.width, top)
+            bl_dropdown = BoxLayout()
+            bl_dropdown.orientation = "vertical"
+            buttons_dd_number = len(Smd.smdParams)
+            bl_dropdown.size_hint_min_y = buttons_dd_number * 25
+            self.root.ids[sv_dropdown.id] = sv_dropdown
+
+            kat_counter = 1
+            for smd_name in Smd.smdParams.keys():
+                btn = Button()
+                btn.text = smd_name
+                btn.id = "bpat" + str(kat_counter) + instance.id
+                btn.background_color = [1, 1, 0, 1]
+                btn.bind(on_press=self.set_pattern)
+                bl_dropdown.add_widget(btn)
+                kat_counter += 1
+            sv_dropdown.add_widget(bl_dropdown)
+            self.cont.fl_main.add_widget(sv_dropdown)
+        else:
+            self.remove_dropdown_widget()
 
     @staticmethod
     def box_layout_kat_create():
