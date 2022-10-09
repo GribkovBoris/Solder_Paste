@@ -116,7 +116,7 @@ class Container(BoxLayout):
         stack_error = 0
         for kat in self.interface_data.stacks:
             if kat.number > 0:
-                self.coil_field_color(kat.number, kat.usage)
+                self.coil_field_color(kat.number, kat.usage, kat.used)
             else:
                 stack_error = 2
 
@@ -172,12 +172,18 @@ class Container(BoxLayout):
         if self.interface_data.devices_number_y == 0:
             self.interface_data.devices_number_y = 1
         # print(self.ids)
-        for kat in range(self.interface_data.NUMBER_COILS):
+        for kat in range(self.interface_data.get_number_slots()):
             self.interface_data.stacks[kat].pattern_name = self.ids[str("katPattern" + str(kat + 1))].text
             self.interface_data.stacks[kat].value = self.ids[str("katValue" + str(kat + 1))].text
 
-    def coil_field_color(self, kat_number, usage):
+    def coil_field_color(self, kat_number, usage, used=0):
         usage = int(usage)
+        if used == 1:
+            if usage == 0:
+                usage = 3
+        if used == 2:
+            if usage == 0 or usage == 1:
+                usage = 4
         if usage == 0:  # full use
             # self.PrintCustom("")
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_FULL_TEXT_FIELD_COLOR
@@ -193,6 +199,14 @@ class Container(BoxLayout):
             self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_IGNORE_TEXT_FIELD_COLOR
             self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_IGNORE_TEXT_FIELD_COLOR
             self.ids["btddKat" + str(kat_number)].text = Smd.USAGE_IGNORE_BUTTON_TEXT
+        if usage == 3:  # used
+            # self.PrintCustom(" - не используется")
+            self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_USED_TEXT_FIELD_COLOR
+            self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_USED_TEXT_FIELD_COLOR
+        if usage == 4:  # not used
+            # self.PrintCustom(" - не используется")
+            self.ids["katPattern" + str(kat_number)].background_color = Smd.USAGE_NOT_USED_TEXT_FIELD_COLOR
+            self.ids["katValue" + str(kat_number)].background_color = Smd.USAGE_NOT_USED_TEXT_FIELD_COLOR
 
     @staticmethod
     def call_file_picker(message, extension):
@@ -355,8 +369,19 @@ class DisplayApp(App):
     def box_layout_kat_create():
         bl_kat = BoxLayout()
         bl_kat.orientation = "vertical"
-        bl_kat.add_widget(Label(text="| Номер | Режим |       Тип       |    Номинал   |"))
+        bl_kat.add_widget(Label(text="| Номер | Режим |       Тип        |      Номинал     |"))
         return bl_kat
+
+    def on_text_kat(self, instance, value):
+        id = instance.id
+        id = id.replace('katPattern', "")
+        id = id.replace('katValue', "")
+        id = int(id)-1
+        self.cont.interface_data.stacks[id].used = 0
+        self.cont.coil_field_color(self.cont.interface_data.stacks[id].number,
+                                   self.cont.interface_data.stacks[id].usage,
+                                   self.cont.interface_data.stacks[id].used)
+        print(id)
 
     def on_start(self):
         bl_kat_l = self.box_layout_kat_create()
@@ -391,9 +416,11 @@ class DisplayApp(App):
             kat_text_input_pattern.size_hint = (2, 1)
             kat_text_input_pattern.background_color = (1, 1, 0, 1)
             kat_text_input_pattern.bind(focus=self.show_dropdown)
+            kat_text_input_pattern.bind(text=self.on_text_kat)
             kat_text_input_value = TextInput(hint_text="Номинал")
             kat_text_input_value.id = "katValue" + str(num + 1)
             self.root.ids[kat_text_input_value.id] = kat_text_input_value
+            kat_text_input_value.bind(text=self.on_text_kat)
             kat_text_input_value.size_hint = (2.4, 1)
             kat_text_input_value.background_color = (1, 1, 0, 1)
             bl_kat_text_input.add_widget(kat_text_input_pattern)

@@ -20,6 +20,7 @@ class Component:
         # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.error = False
         self.pins = None
+        self.ignored = False
         self.interface_data = interface_data_
         self.center = center
         self.real_angle = angle
@@ -266,14 +267,20 @@ class Component:
         self.height = 0.5
         self.error = True
         self.sizeType = Smd.get_size_type(self.pattern_name)
+        self.ignored = False
         for st in self.interface_data.stacks:
             st_value = st.value
             self.skip = 0
             if self.pattern_name == st.pattern_name and st.number != 0 and self.value == st_value:
-                self.stack = st.number
-                self.height = st.height
-                self.error = False
+                if st.usage == 2:
+                    self.ignored = True
+                else:
+                    self.stack = st.number
+                    self.height = st.height
+                    st.used = 1
+                    self.error = False
                 break
+
 
         if not self.error:
             self.pins = []

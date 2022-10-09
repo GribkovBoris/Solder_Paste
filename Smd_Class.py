@@ -9,9 +9,13 @@ class Smd:
     USAGE_FULL_TEXT_FIELD_COLOR = [1, 1, 0, 1]
     USAGE_PASTE_TEXT_FIELD_COLOR = [0.4, 0.6, 0.1, 1]
     USAGE_IGNORE_TEXT_FIELD_COLOR = [0.3, 0.3, 0.3, 1]
+    USAGE_USED_TEXT_FIELD_COLOR = [0, 1, 0, 1]
+    USAGE_NOT_USED_TEXT_FIELD_COLOR = [1, 0, 0, 1]
     USAGE_FULL_BUTTON_COLOR = [0.9, 0.9, 0, 1]
     USAGE_PASTE_BUTTON_COLOR = [0.4, 0.6, 0.1, 1]
     USAGE_IGNORE_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
+    USAGE_USED_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
+    USAGE_NOT_USED_BUTTON_COLOR = [0.3, 0.3, 0.3, 1]
 
     @staticmethod
     def divine_color(color, diviner):
@@ -47,6 +51,7 @@ class Smd:
         self.value = value
         self.pattern_name = pattern_name
         self.usage = usage
+        self.used = 0
         self.height = 0
         self.height = self.get_height(pattern_name)
 

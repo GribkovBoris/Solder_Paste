@@ -453,6 +453,7 @@ class PcadConverter:
     def create_chmt_files(self):
         split_count = 1
         number_components = 0
+        self.components = []
         number_auto = 0
         number_decline = 0
         if self.interface_data.split_size_type:
@@ -679,7 +680,10 @@ class PcadConverter:
                 type_unique.append(k.type)
                 value_unique.append(k.value)
                 i += 1
-                self.print_custom(f"{i}) {k.description}, {k.pattern_name}, {k.value}")
+                add_string = ""
+                if k.ignored:
+                    add_string = " - Игнорирован"
+                self.print_custom(f"{i}) {k.description}, {k.pattern_name}, {k.value}{add_string}")
         # --------------------------------------------------------------
 
     def get_drive(self):
@@ -798,6 +802,8 @@ class PcadConverter:
         # ***********************************************************************
 
     def convert_pcad_to_files(self):
+        for st in self.interface_data.stacks:
+            st.used = 2
         self.out_text = ""
         file_name = "input.txt"
         self.path_to_file = self.path_to_folder + file_name
