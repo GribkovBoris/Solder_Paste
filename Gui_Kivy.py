@@ -16,7 +16,8 @@ from kivy.properties import ObjectProperty
 from kivy.core.window import Window
 import psutil
 # from pywinauto import Application # TODO
-
+# "C:\\Users\\Boris\\PycharmProjects\\Solder_Paste\\venv\\Lib\\site-packages"
+# "C:\Users\Boris\PycharmProjects\Solder_Paste\venv\Lib\site-packages"
 # ==================================================================
 from Solder_Paste import PcadConverter
 from Smd_Class import Smd
